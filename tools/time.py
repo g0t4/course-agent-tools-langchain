@@ -29,3 +29,5 @@ messages.append(HumanMessage("the time is 2026-04-09 16:32:31.313067 "))
 
 response3 = model.invoke(messages)
 print(response3.content)
+messages.append(response3)
+
