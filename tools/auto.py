@@ -1,8 +1,11 @@
 import rich
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+# from langchain_openai import ChatOpenAI
+from langchain_llama_server import ChatLlamaServer
 
-model = init_chat_model("gpt-5.4")
+# model = init_chat_model("gpt-5.4")
+model = ChatLlamaServer(base_url="http://paxy.lan:8013", api_key="")
 
 def get_the_time():
     """ Returns the local time """
@@ -49,6 +52,5 @@ def show_messages(messages):
             print(f': {m.content}')
         else:
             rich.print(f"unexpected message type: {m}")
-
 
 show_messages(thread["messages"])
