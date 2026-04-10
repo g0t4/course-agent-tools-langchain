@@ -12,6 +12,7 @@ model = ChatLlamaServer(base_url="http://paxy:8013", api_key="")
 def get_the_time():
     """ Returns the local time in HH:MM AM/PM format"""
     return datetime.now().strftime("%I:%M %p")
+    # return datetime.now() # surprise with date too
 
 @tool(description="get the date in YYYY-mm-dd format")
 def lookup_date():
