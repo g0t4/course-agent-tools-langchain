@@ -6,7 +6,7 @@ from langchain_llama_server import ChatLlamaServer
 
 # model = init_chat_model("gpt-5.4")
 # model = ChatLlamaServer(base_url="http://paxy.lan:8013", api_key="")
-model = init_chat_model("anthropic:claude-sonnet-4-6")
+model = init_chat_model("claude-sonnet-4-6")
 
 def get_the_time():
     """ Returns the local time """
