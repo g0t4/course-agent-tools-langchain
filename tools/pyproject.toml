@@ -6,7 +6,11 @@ dependencies = [
  "ipykernel>=7.2.0",
  "langchain>=1.2.15",
  "langchain-anthropic>=1.4.0",
+ "langchain-llama-server",
  "langchain-openai>=1.1.12",
  "rich>=14.3.3",
  "yapf>=0.43.0",
 ]
+
+[tool.uv.sources]
+langchain-llama-server = { path = "../../langchain-llama-server", editable = true }

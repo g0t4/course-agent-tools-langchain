@@ -556,6 +556,28 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-llama-server"
+version = "0.1.1"
+source = { editable = "../../langchain-llama-server" }
+dependencies = [
+    { name = "langchain" },
+    { name = "langchain-openai" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain", specifier = ">=1.2.10" },
+    { name = "langchain-openai", specifier = ">=0.3.35" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipykernel", specifier = ">=7.2.0" },
+    { name = "rich", specifier = ">=14.3.3" },
+    { name = "yapf", specifier = ">=0.43.0" },
+]
+
+[[package]]
 name = "langchain-openai"
 version = "1.1.12"
 source = { registry = "https://pypi.org/simple" }
@@ -1324,6 +1346,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "langchain" },
     { name = "langchain-anthropic" },
+    { name = "langchain-llama-server" },
     { name = "langchain-openai" },
     { name = "rich" },
     { name = "yapf" },
@@ -1334,6 +1357,7 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "langchain", specifier = ">=1.2.15" },
     { name = "langchain-anthropic", specifier = ">=1.4.0" },
+    { name = "langchain-llama-server", editable = "../../langchain-llama-server" },
     { name = "langchain-openai", specifier = ">=1.1.12" },
     { name = "rich", specifier = ">=14.3.3" },
     { name = "yapf", specifier = ">=0.43.0" },
