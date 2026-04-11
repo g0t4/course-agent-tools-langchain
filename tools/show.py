@@ -1,5 +1,7 @@
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 import rich
+from rich.syntax import Syntax
+from rich.padding import Padding
 
 def show_messages(messages):
     for m in messages:
@@ -13,8 +15,18 @@ def show_messages(messages):
             if m.tool_calls:
                 for call in m.tool_calls:
                     rich.print(f'[bold deep_sky_blue3]Tool call[/]', end="")
-                    print(": " + call["name"], end="")
-                    print(f'({call["args"]})')
+                    if call["name"] == "run_python":
+                        print(": run_python")
+                        code = call["args"]["code"]
+                        # print code with rich syntax highlighting
+                        syntax = Syntax(code, "python", theme="monokai")
+                        console = rich.console.Console()
+                        console.print(Padding(syntax, pad=(0, 0, 0, 4)))
+
+                    else:
+                        print(": " + call["name"], end="")
+                        print(f'({call["args"]})')
+
         elif isinstance(m, ToolMessage):
             rich.print(f'[bold slate_blue1]Tool[/]', end="")
             print(f': {m.content}')
