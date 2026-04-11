@@ -22,8 +22,8 @@ def run_python(code: str):
         return traceback.format_exc()
     return stdout.getvalue()
 
+@tool(description="Execute a shell commandline and return its STDOUT.")
 def run_command(commandline: str) -> dict[str, str | int]:
-    """Execute a shell commandline and return its STDOUT."""
     import subprocess
     result = subprocess.run(
         commandline,
