@@ -10,9 +10,7 @@ from show import show_messages
 model = ChatLlamaServer(base_url="http://paxy:8013", api_key="")
 
 def run_python(code: str):
-    """ Execute a python script and return STDOUT
-        FYI you can use subprocess to run system commmands too!
-    """
+    """ Execute a python script and return STDOUT """
     import io
     import contextlib
     import traceback
