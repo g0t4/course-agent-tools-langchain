@@ -10,7 +10,9 @@ from show import show_messages
 model = ChatLlamaServer(base_url="http://paxy:8013", api_key="")
 
 def run_python(code: str):
-    """ Execute a python script and return STDOUT """
+    """ Execute a python script and return STDOUT
+        FYI you can use subprocess to run system commmands too!
+    """
     import io
     import contextlib
     import traceback
@@ -40,10 +42,10 @@ def run_command(commandline: str) -> dict[str, str | int]:
 # %%
 
 messages = [
-    HumanMessage("Get me a unix timestamp for right now?"),
+    HumanMessage("List files in the current directory in a format like ls -al"),
 ]
 
-agent = create_agent(model, tools=[run_python, run_command])
+agent = create_agent(model, tools=[run_python])
 thread = agent.invoke({"messages": messages})  # pyright: ignore
 
 show_messages(thread["messages"])
