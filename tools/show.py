@@ -3,6 +3,8 @@ import rich
 from rich.syntax import Syntax
 from rich.padding import Padding
 
+console = rich.console.Console()
+
 def show_messages(messages):
     for m in messages:
         if isinstance(m, HumanMessage):
@@ -19,9 +21,12 @@ def show_messages(messages):
                     if call["name"] == "run_python":
                         print()
                         code = call["args"]["code"]
-                        # print code with rich syntax highlighting
                         syntax = Syntax(code, "python", theme="monokai")
-                        console = rich.console.Console()
+                        console.print(Padding(syntax, pad=(0, 0, 0, 4)))
+                    elif call["name"] == "run_command":
+                        print()
+                        code = call["args"]["commandline"]
+                        syntax = Syntax(code, "bash", theme="monokai")
                         console.print(Padding(syntax, pad=(0, 0, 0, 4)))
                     else:
                         print(f'({call["args"]})')
