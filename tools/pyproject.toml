@@ -8,6 +8,8 @@ dependencies = [
  "langchain-anthropic>=1.4.0",
  "langchain-llama-server",
  "langchain-openai>=1.1.12",
+ "ptw>=1.0.1",
+ "pytest>=9.0.3",
  "rich>=14.3.3",
  "yapf>=0.43.0",
 ]
