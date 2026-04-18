@@ -5,7 +5,10 @@ import json
 import sys
 import asyncio
 from datetime import datetime
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage, AIMessageChunk
+
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage, AIMessageChunk
+from langchain_core.runnables import Runnable
+from langchain_core.runnables.schema import StreamEvent
 
 console = rich.console.Console()
 
@@ -64,7 +67,7 @@ def write(msg: str):
     rich.print(msg, end="")
     sys.stdout.flush()
 
-async def stream_messages(agent, messages):
+async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
     clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
 
@@ -81,6 +84,8 @@ async def stream_messages(agent, messages):
     prior_event_started_at = current_event_started_at
 
     index = 0
+
+    event: StreamEvent
     async for event in agent.astream_events({"messages": messages}, ):
         prior_event_started_at = current_event_started_at
         current_event_started_at = datetime.now().timestamp()
