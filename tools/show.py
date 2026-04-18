@@ -169,49 +169,64 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
                 message_type = type(chunk).__name__
                 writeln(f"{index}. [bold gray0 on deep_sky_blue3]{message_type}")
 
+            # standardized content blocks:
+            #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
+            #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
+            no_content_blocks = len(chunk.content_blocks) == 0
+            if no_content_blocks:
+                continue
+
+            block = chunk.content_blocks[0]
+            block_type = block.get("type", "")
+
+            # FYI the following assumes sequential chunks per type
+            #   no interleaving of reasoning/content/tool_call chunks
+            #   chunks are in order
+            #   all reasoning first (if any), then all content, then all tool_call (if any)
+            #   not all providers return reasoning tokens
+
             # * reasoning
-            reasoning: str = chunk.additional_kwargs.get("reasoning_content", "")
-            if reasoning:
+            # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
+            if block_type == "reasoning":
                 if not ai_has_reasoning:
                     write(f"    [bold]reasoning:[/] ")
                     ai_has_reasoning = True
-                write(reasoning)
+                write(block.get("reasoning", ""))
 
             # * content
-            content: str = chunk.content
-            if content:
+            # content: str = chunk.content # w/o content_blocks
+            if block_type == "text":
                 if not ai_has_content:
                     if ai_has_reasoning:
                         writeln()  # new line to end reasoning
                     write(f"    [bold]content:[/] ")
                     ai_has_content = True
-                write(content)
+                write(block.get("text", ""))
 
             # * tool call
-            calls = chunk.tool_call_chunks  # also chunk.tool_calls and chunk.invalid_tool_calls ... ignore these and use what appears to always have the chunk (regardless of this idea around invalid)
-            if calls and len(calls):
-                if len(calls) > 1:
+            # calls = chunk.tool_call_chunks # w/o content_blocks
+            if block_type == "tool_call_chunk":
+                tool_call = block
+                if tool_call.get("index", "") > 0:
                     raise RuntimeError("multiple tool calls not supported")
-                # FYI won't work for parallel tool calls
-                tool_call = calls[0]
-                if tool_call:
-                    if not ai_has_tool_call:
-                        if ai_has_reasoning or ai_has_content:
-                            writeln()  # new line to end content/reasoning before this
-                        ai_has_tool_call = True
 
-                    # * first chunk has name+id:
-                    name = tool_call.get("name", "")
-                    if name:
-                        write(f"    [bold]{name}[/]")
-                        # start args on next line, indented
-                        write("\n" + indent2_spaces)
+                if not ai_has_tool_call:
+                    if ai_has_reasoning or ai_has_content:
+                        writeln()  # new line to end content/reasoning before this
+                    ai_has_tool_call = True
 
-                    # * chunks 2+ have part of args
-                    args = tool_call.get("args", "")
-                    if args:
-                        args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
-                        write(args_indented)
+                # * first chunk has name+id:
+                name = tool_call.get("name", "")
+                if name:
+                    write(f"    [bold]{name}[/]")
+                    # start args on next line, indented
+                    write("\n" + indent2_spaces)
+
+                # * chunks 2+ have part of args
+                args = tool_call.get("args", "")
+                if args:
+                    args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
+                    write(args_indented)
 
             if SIMULATE_DELAY:
                 MIN_SLEEP = 0.005  # 5 ms
