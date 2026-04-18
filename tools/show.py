@@ -158,7 +158,9 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             # streaming chunks so we can see response as it is generated
             chunk_count += 1
             chunk: AIMessageChunk = data.get("chunk", "")
-            # writeln(f"\n{chunk}\n")
+            # print("chunk", chunk)
+            # print("    ", chunk.content_blocks) # lazy parsed from chunk
+            # continue
 
             if not ai_started:
                 index += 1
