@@ -8,7 +8,10 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_llama_server import ChatLlamaServer
 
-model = ChatLlamaServer(base_url="http://paxy:8012", api_key="")
+model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
+    # Qwen3.6 via llama-server
+    extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
+)
 
 messages = [
     # HumanMessage("List files in the current directory in a format like ls -al"),
@@ -16,6 +19,7 @@ messages = [
 ]
 
 from run_python import run_command, run_python
+
 agent = create_agent(model, tools=[run_python, run_command])
 
 from show import stream_messages
