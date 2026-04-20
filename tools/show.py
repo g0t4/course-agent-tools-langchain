@@ -71,7 +71,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
     clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
 
-    SIMULATE_DELAY = False  # artificial delay so you can see chat progression when tok/sec is high (i.e. 200 tok/sec)
+    SIMULATE_DELAY = True  # artificial delay so you can see chat progression when tok/sec is high (i.e. 200 tok/sec)
     indent2_spaces = " " * 8
 
     # initialize detectors

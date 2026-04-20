@@ -11,8 +11,8 @@ from langchain_llama_server import ChatLlamaServer
 model = ChatLlamaServer(base_url="http://paxy:8012", api_key="")
 
 messages = [
-    HumanMessage("List files in the current directory in a format like ls -al"),
-    # HumanMessage("Tell me about the hardware in my computer"),
+    # HumanMessage("List files in the current directory in a format like ls -al"),
+    HumanMessage("Tell me about the hardware in my computer"),
 ]
 
 from run_python import run_command, run_python
