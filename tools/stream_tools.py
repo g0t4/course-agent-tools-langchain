@@ -8,8 +8,6 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_llama_server import ChatLlamaServer
 
-# TODO demo changes to this setup (but do it in your run_python.py "notebook")
-
 model = ChatLlamaServer(base_url="http://paxy:8012", api_key="")
 
 messages = [
