@@ -19,3 +19,4 @@ dependencies = [
 
 [tool.uv.sources]
 langchain-llama-server = { path = "../../langchain-llama-server", editable = true }
+langchain-mcp-adapters = { path = "../../../langchain-ai/langchain-mcp-adapters", editable = true }
