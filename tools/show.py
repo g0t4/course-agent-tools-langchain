@@ -105,7 +105,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             args = data["input"]
             if tool_name == "run_python":
                 code = args.get("code", "")
-                del args["code"]  # in case want to show rest as precaution (i.e. model also passes wrong args too)
+                del args["code"]  # remove so I can show rest of args if any other args encountered (s/b just "code" in this case)
                 writeln_indented(Syntax(code, "python"))
             elif tool_name == "run_command":
                 commandline = args.get("commandline", "")
@@ -127,13 +127,12 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
             if is_tool_message:
 
-                # simulate delay
+                # simulate delay of at least 1 second
                 took_less_than_a_minute = current_event_started_at - prior_event_started_at < 1
-                if SIMULATE_DELAY and (took_less_than_a_minute):
-                    # enforce a minimum 1‑second perceived tool‑call duration
+                if SIMULATE_DELAY and took_less_than_a_minute:
                     await asyncio.sleep(1 - (current_event_started_at - prior_event_started_at))
 
-                # erase ... Calling Tool ...
+                # erase "... Calling Tool ..." message
                 sys.stdout.write("\r" + " " * 80 + "\r")  # 80 spaces to wipe out "Calling tool" message, then reset again
 
             writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
@@ -164,9 +163,8 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
             if not ai_started:
                 index += 1
-                # * role
                 ai_started = True
-                message_type = type(chunk).__name__
+                message_type = type(chunk).__name__  # * role
                 writeln(f"{index}. [bold gray0 on deep_sky_blue3]{message_type}")
 
             # standardized content blocks:
@@ -185,7 +183,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             #   all reasoning first (if any), then all content, then all tool_call (if any)
             #   not all providers return reasoning tokens
 
-            # * reasoning
+            # * model's reasoning
             # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
             if block_type == "reasoning":
                 if not ai_has_reasoning:
@@ -193,7 +191,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
                     ai_has_reasoning = True
                 write(block.get("reasoning", ""))
 
-            # * content
+            # * model's content
             # content: str = chunk.content # w/o content_blocks
             if block_type == "text":
                 if not ai_has_content:
@@ -203,7 +201,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
                     ai_has_content = True
                 write(block.get("text", ""))
 
-            # * tool call
+            # * model's tool call request
             # calls = chunk.tool_call_chunks # w/o content_blocks
             if block_type == "tool_call_chunk":
                 tool_call = block
