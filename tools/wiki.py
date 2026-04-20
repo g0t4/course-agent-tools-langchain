@@ -23,7 +23,7 @@ from run_python import run_command, run_python
 model = ChatLlamaServer(base_url="http://paxy:8012", api_key="")
 
 messages = [
-    HumanMessage("What are some modern AMD consumer CPUs?"),
+    HumanMessage("What are some AMD consumer CPUs from 2026?"),
 ]
 
 agent = create_agent(model, tools=[run_python, run_command, wikipedia])
