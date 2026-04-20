@@ -87,18 +87,18 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
     event: StreamEvent
     async for event in agent.astream_events({"messages": messages}, ):
+        # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
+        # event type naming: on_[runnable_type]_(start|stream|end)
+        # - runnable types: chain, chat_model, tool
+
         prior_event_started_at = current_event_started_at
         current_event_started_at = datetime.now().timestamp()
 
-        event_type = event["event"]
+        event_name = event["event"]
         data = event['data']
-        # writeln(event_type)
-        # if not event_type in ["on_chat_model_stream"]:
-        #     writeln(data)
-        # continue
 
-        # * Tool call start
-        if event_type == "on_tool_start":
+        # * on_tool_start
+        if event_name == "on_tool_start":
             tool_name = event["name"]
             writeln_indented(f"\n[bold gray0 on deep_sky_blue3]{tool_name}")
 
@@ -117,7 +117,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             write("\n    [red bold].......... Calling tool ..........[/]")
 
         # * HumanMessage/ToolMessage/etc (User Message => Model)
-        elif event_type == "on_chat_model_start":
+        elif event_name == "on_chat_model_start":
             index += 1
             input = data.get("input", "")
             history = input.get("messages", "")[0]
@@ -154,7 +154,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
                 await asyncio.sleep(0.05)
 
         # * streaming AIMessageChunks (Model => User)
-        elif event_type == "on_chat_model_stream":
+        elif event_name == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
             chunk_count += 1
             chunk: AIMessageChunk = data.get("chunk", "")
