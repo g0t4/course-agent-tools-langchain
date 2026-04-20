@@ -49,11 +49,15 @@ def clear_screen():
     # optional, clear screen first:
     get_ipython().run_line_magic("clear", "")
 
-def truncate_content(content: str) -> str:
-    lines = content.splitlines()
-    if len(lines) > 3:
-        return "\n".join(lines[:3]) + "\n..."
-    return content
+def display_tool_message(content: str) -> str:
+    if type(content) is str:
+        lines = content.splitlines()
+        if len(lines) > 3:
+            return "\n".join(lines[:3]) + "\n..."
+    # elif type(content) is list:
+    #     # MCP tooling often has a list
+    #     return json.dumps(content)
+    return json.dumps(content)
 
 def writeln_indented(msg: str | Syntax):
     rich.print(Padding(msg, (0, 0, 0, 4)))
@@ -137,7 +141,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
             writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
             if is_tool_message:
-                writeln_indented(truncate_content(user_message.content))
+                writeln_indented(display_tool_message(user_message.content))
             else:
                 writeln_indented(user_message.content)
             writeln()
