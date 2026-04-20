@@ -41,11 +41,11 @@ def run_command(commandline: str) -> dict[str, str | int]:
 
 # %%
 
-messages = [
-    HumanMessage("List files in the current directory in a format like ls -al"),
-]
-
-agent = create_agent(model, tools=[run_python])
-thread = agent.invoke({"messages": messages})  # pyright: ignore
-
-show_messages(thread["messages"])
+# messages = [
+#     HumanMessage("List files in the current directory in a format like ls -al"),
+# ]
+#
+# agent = create_agent(model, tools=[run_python])
+# thread = agent.invoke({"messages": messages})  # pyright: ignore
+#
+# show_messages(thread["messages"])
