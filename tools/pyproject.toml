@@ -6,6 +6,7 @@ dependencies = [
  "ipykernel>=7.2.0",
  "langchain>=1.2.15",
  "langchain-anthropic>=1.4.0",
+ "langchain-community>=0.4.1",
  "langchain-llama-server",
  "langchain-openai>=1.1.12",
  "ptw>=1.0.1",
