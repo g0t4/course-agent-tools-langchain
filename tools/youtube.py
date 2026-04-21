@@ -39,8 +39,8 @@ messages = [
 ]
 
 
-# tools = [search_youtube]
-tools = [youtube_search_tool_original]
+tools = [search_youtube]
+# tools = [youtube_search_tool_original]
 agent = create_agent(model, tools=tools)
 
 await stream_messages(agent, messages) # pyright: ignore
