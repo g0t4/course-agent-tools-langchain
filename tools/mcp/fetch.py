@@ -36,7 +36,7 @@ client = MultiServerMCPClient({
         "transport": "http",
         "url": "https://docs.langchain.com/mcp",
     }
-})
+}) # pyright: ignore
 
 
 
