@@ -29,6 +29,13 @@ youtube_search_tool.run("Wes Higbee gpt-oss, 3")
 
 
 
+def search_youtube(query: str, limit: int = 2) -> list[str]:
+    """query videos on youtube and get back a list of links"""
+    from langchain_community.tools import YouTubeSearchTool
+    inner_tool = YouTubeSearchTool()
+    combined = f"{query},{limit}" if limit != 2 else query
+    # print(f'{combined=}')
+    return inner_tool.run(combined)
 
 
 messages = [
@@ -36,7 +43,7 @@ messages = [
 ]
 
 
-tools = [youtube_search_tool]
+tools = [search_youtube]
 agent = create_agent(model, tools=tools)
 
 await stream_messages(agent, messages) # pyright: ignore
