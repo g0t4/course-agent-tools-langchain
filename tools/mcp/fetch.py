@@ -31,13 +31,17 @@ client = MultiServerMCPClient({
             os.environ["HOME"] + "/repos/github/g0t4/mcp-servers/src/fetch",
             "mcp-server-fetch",
         ],
+    },
+    "langchain-docs": {
+        "transport": "http",
+        "url": "https://docs.langchain.com/mcp",
     }
 })
 
 
 
 messages = [
-    HumanMessage("Tell me the world news"),
+    HumanMessage("What transports are available for MCP tools?"),
 ]
 
 
