@@ -15,6 +15,7 @@ dependencies = [
  "rich>=14.3.3",
  "wikipedia>=1.4.0",
  "yapf>=0.43.0",
+ "youtube-search>=2.2.0",
 ]
 
 [tool.uv.sources]
