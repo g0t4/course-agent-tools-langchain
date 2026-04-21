@@ -19,7 +19,6 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain.agents import create_agent
 
 client = MultiServerMCPClient({
     # https://github.com/g0t4/mcp-servers
