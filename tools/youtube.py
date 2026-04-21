@@ -14,12 +14,8 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="")
 from langchain_community.tools import YouTubeSearchTool
 
 youtube_search_tool_original = YouTubeSearchTool()
-youtube_search_tool_original.run("Wes Higbee gpt-oss, 3")
 
-
-
-
-
+# youtube_search_tool_original.run("Wes Higbee gpt-oss, 3")
 
 
 
