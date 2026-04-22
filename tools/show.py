@@ -134,8 +134,6 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             else:
                 writeln_indented(Syntax(json.dumps(args), "json"))
 
-            write("\n    [red bold].......... Calling tool ..........[/]")
-
         # * HumanMessage/ToolMessage/etc (User Message => Model)
         elif event_name == "on_chat_model_start":
             index += 1
@@ -151,9 +149,6 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
                 took_less_than_a_minute = current_event_started_at - prior_event_started_at < 1
                 if SIMULATE_DELAY and took_less_than_a_minute:
                     await asyncio.sleep(1 - (current_event_started_at - prior_event_started_at))
-
-                # erase "... Calling Tool ..." message
-                sys.stdout.write("\r" + " " * 80 + "\r")  # 80 spaces to wipe out "Calling tool" message, then reset again
 
             writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
             if is_tool_message:
@@ -225,18 +220,18 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
             # calls = chunk.tool_call_chunks # w/o content_blocks
             if block_type == "tool_call_chunk":
                 tool_call = block
-                if tool_call.get("index", "") > 0:
-                    raise RuntimeError("multiple tool calls not supported")
+                index = tool_call.get("index", "")
 
-                if not ai_has_tool_call:
-                    if ai_has_reasoning or ai_has_content:
-                        writeln()  # new line to end content/reasoning before this
-                    ai_has_tool_call = True
+                # if not ai_has_tool_call:
+                #     if ai_has_reasoning or ai_has_content:
+                #         # PRN new line after each tool call too?
+                #         writeln()  # new line to end content/reasoning before this
+                #     ai_has_tool_call = True
 
                 # * first chunk has name+id:
                 name = tool_call.get("name", "")
                 if name:
-                    write(f"    [bold]{name}[/]")
+                    write(f"\n    [bold]{index}:{name}[/]")
                     # start args on next line, indented
                     write("\n" + indent2_spaces)
 
