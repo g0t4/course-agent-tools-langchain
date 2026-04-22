@@ -53,6 +53,8 @@ def display_tool_message(message: ToolMessage) -> str:
     content = message.content
     if message.name == "run_command":
         display_tool_run_command(message)
+    # if message.name == "run_python":
+    #     display_tool_run_python(message)
     if isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:

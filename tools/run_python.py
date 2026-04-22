@@ -22,6 +22,7 @@ def run_python(code: str):
             exec(code, {})
     except Exception:
         return traceback.format_exc()
+    # FYI, we could return more than just STDOUT!
     return stdout.getvalue()
 
 @tool(description="Execute a shell commandline and return its STDOUT.")
