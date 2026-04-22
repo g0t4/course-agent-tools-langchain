@@ -54,6 +54,7 @@ def display_tool_message(content: str) -> str:
         lines = content.splitlines()
         if len(lines) > 3:
             return "\n".join(lines[:3]) + "\n..."
+        return content  # return all lines
     # elif type(content) is list:
     #     # MCP tooling often has a list
     #     return json.dumps(content)
