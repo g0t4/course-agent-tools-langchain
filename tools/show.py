@@ -53,8 +53,8 @@ def display_tool_message(message: ToolMessage) -> str:
     content = message.content
     if type(content) is str:
         lines = content.splitlines()
-        if len(lines) > 3:
-            return "\n".join(lines[:3]) + "\n..."
+        if len(lines) > 5:
+            return "\n".join(lines[:5]) + "\n..."
         return content  # return all lines
     # elif type(content) is list:
     #     # MCP tooling often has a list
