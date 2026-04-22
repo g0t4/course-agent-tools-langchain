@@ -49,7 +49,8 @@ def clear_screen():
     # optional, clear screen first:
     get_ipython().run_line_magic("clear", "")
 
-def display_tool_message(content: str) -> str:
+def display_tool_message(message: ToolMessage) -> str:
+    content = message.content
     if type(content) is str:
         lines = content.splitlines()
         if len(lines) > 3:
@@ -142,7 +143,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
 
             writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
             if is_tool_message:
-                writeln_indented(display_tool_message(user_message.content))
+                writeln_indented(display_tool_message(user_message))
             else:
                 writeln_indented(user_message.content)
             writeln()
