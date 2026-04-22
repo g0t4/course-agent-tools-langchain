@@ -51,15 +51,27 @@ def clear_screen():
 
 def display_tool_message(message: ToolMessage) -> str:
     content = message.content
-    if type(content) is str:
+    if message.name == "run_command":
+        display_tool_run_command(message)
+    if isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
             return "\n".join(lines[:5]) + "\n..."
         return content  # return all lines
-    # elif type(content) is list:
-    #     # MCP tooling often has a list
-    #     return json.dumps(content)
     return json.dumps(content)
+
+def display_tool_run_command(message: ToolMessage) -> str:
+    content = message.content
+    if not isinstance(content, str):
+        rich.print('[red]run_command message.content should be a string, but is not... ')
+        return json.dumps(content)
+    try:
+        obj = json.loads(content)
+    except json.JSONDecodeError:
+        rich.print("[red]failed to load JSON result...")
+        return content
+    lines = [f"[bold]{k}[/]:\n {v}" for k, v in obj.items()]
+    return "\n".join(lines)
 
 def writeln_indented(msg: str | Syntax):
     rich.print(Padding(msg, (0, 0, 0, 4)))
