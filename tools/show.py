@@ -104,7 +104,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     def show_tool_message(message: ToolMessage):
         name = message.name
-        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/]")
+        id = message.tool_call_id
+        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name} ({id})[/]")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         writeln_indented(display_tool_message(message))
 
@@ -126,11 +127,12 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             write(f"    [bold]content:[/] ")
             writeln(message.content)
         if message.tool_calls:
-            for call_index, tool_call in enumerate(message.tool_calls):
+            for tool_call in message.tool_calls:
                 # writeln_indented(json.dumps(tool_call, indent=2))
+                id = tool_call.get("id", "")
                 name = tool_call.get("name", "")
                 if name:
-                    write(f"\n    [bold]{call_index}:{name}[/]")
+                    write(f"\n    [bold]{name}[/]")
                     write("\n" + indent2_spaces)
 
                 args = tool_call.get("args", "")
@@ -172,8 +174,12 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
         # * on_tool_start
         if event_name == "on_tool_start":
+            # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
+            #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
+            #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
             tool_name = event["name"]
-            writeln_indented(f"[bold gray0 on deep_sky_blue3]{tool_name}")
+            # AFAICT there is no tool_call_id available on start event
+            writeln_indented(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
 
             args = data.get("input")
             assert isinstance(args, dict)
@@ -185,8 +191,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 commandline = args.get("commandline", "")
                 del args["commandline"]
                 writeln_indented(Syntax(commandline, "bash"))
-            else:
-                writeln_indented(Syntax(json.dumps(args), "json"))
+            # FYI no reason to dump JSON again
             writeln()
 
         if event_name == "on_tool_end":
@@ -266,7 +271,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             # calls = chunk.tool_call_chunks # w/o content_blocks
             if block_type == "tool_call_chunk":
                 tool_call = block
-                call_index = tool_call.get("index", "")
+                # call_index = tool_call.get("index", "")
 
                 # if not ai_has_tool_call:
                 #     if ai_has_reasoning or ai_has_content:
@@ -276,8 +281,9 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
                 # * first chunk has name+id:
                 name = tool_call.get("name", "")
+                id = tool_call.get("id", "")
                 if name:
-                    write(f"\n    [bold]{call_index}:{name}[/]")
+                    write(f"\n    [bold]{name}[/] ({id})")
                     # start args on next line, indented
                     write("\n" + indent2_spaces)
 
