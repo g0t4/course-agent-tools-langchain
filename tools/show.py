@@ -114,26 +114,26 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     ai_has_content = False
     chunk_count = 0
 
-    index = 0
+    message_index = 0
 
     def show_tool_message(message: ToolMessage):
         name = message.name
         id = message.tool_call_id
         show_id = ({id})
-        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        writeln(f"{message_index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message)
 
     def show_system_message(message: SystemMessage):
-        writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
+        writeln(f"{message_index}. [bold gray0 on gold1]SystemMessage")
         writeln_indented(message.content, markup=False)
 
     def show_human_message(message: HumanMessage):
-        writeln(f"{index}. [bold gray0 on slate_blue1]HumanMessage")
+        writeln(f"{message_index}. [bold gray0 on slate_blue1]HumanMessage")
         writeln_indented(message.content, markup=False)
 
     def show_ai_message(message: AIMessage):
-        writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
+        writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
             write(f"    [bold]reasoning:[/] ")
@@ -171,7 +171,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     # * show initial messages
     for tool_message in initial_messages:
-        index += 1
+        message_index += 1
         _show_message(tool_message)
 
     events = []
@@ -218,7 +218,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             writeln()
 
         if event_name == "on_tool_end":
-            index += 1
+            message_index += 1
             # * show ToolMessage
             tool_message = data.get("output")
             assert isinstance(tool_message, ToolMessage)
@@ -256,9 +256,9 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             assert isinstance(chunk, AIMessageChunk)
 
             if not ai_started:
-                index += 1
+                message_index += 1
                 ai_started = True
-                writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
+                writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
 
             # standardized content blocks:
             #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
