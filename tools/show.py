@@ -14,15 +14,15 @@ console = rich.console.Console()
 def show_messages(messages):
     for m in messages:
         if isinstance(m, HumanMessage):
-            rich.print(f'[bold slate_blue1]Human[/]', end="")
+            console.print(f'[bold slate_blue1]Human[/]', end="")
             print(f': {m.content}')
         elif isinstance(m, AIMessage):
             if m.content:
-                rich.print(f'[bold deep_sky_blue3]AI[/]', end="")
+                console.print(f'[bold deep_sky_blue3]AI[/]', end="")
                 print(f': {m.content}')
             if m.tool_calls:
                 for call in m.tool_calls:
-                    rich.print(f'[bold deep_sky_blue3]Tool call[/]', end="")
+                    console.print(f'[bold deep_sky_blue3]Tool call[/]', end="")
                     print(": " + call["name"], end="")
                     if call["name"] == "run_python":
                         print()
@@ -38,10 +38,10 @@ def show_messages(messages):
                         print(f'({call["args"]})')
 
         elif isinstance(m, ToolMessage):
-            rich.print(f'[bold slate_blue1]Tool[/]', end="")
+            console.print(f'[bold slate_blue1]Tool[/]', end="")
             print(f': {m.content}')
         else:
-            rich.print(f"unexpected message type: {m}")
+            console.print(f"unexpected message type: {m}")
 
 def clear_screen():
     from IPython import get_ipython
@@ -66,12 +66,12 @@ def format_tool_message_content(message: ToolMessage) -> str:
 def _format_tool_message_for_run_command(message: ToolMessage) -> str:
     content = message.content
     if not isinstance(content, str):
-        rich.print('[red]run_command message.content should be a string, but is not... [/]')
+        console.print('[red]run_command message.content should be a string, but is not... [/]')
         return json.dumps(content)
     try:
         obj = json.loads(content)
     except json.JSONDecodeError:
-        rich.print("[red]failed to load JSON result...[/]")
+        console.print("[red]failed to load JSON result...[/]")
         return content
     lines = [f"[bold]{k}[/]:\n {v}" for k, v in obj.items()]
     return "\n".join(lines)
@@ -80,12 +80,12 @@ def writeln_indented(msg: str | Syntax, *args, **kwargs):
     console.print(Padding(msg, (0, 0, 0, 4)), *args, **kwargs)
     sys.stdout.flush()
 
-def writeln(msg: str | Padding | None = ""):
-    rich.print(msg or "")
+def writeln(msg: str | Padding | None = "", *args, **kwargs):
+    console.print(msg or "", *args, **kwargs)
     sys.stdout.flush()
 
-def write(msg: str):
-    rich.print(msg, end="")
+def write(msg: str, *args, **kwargs):
+    console.print(msg, end="", *args, **kwargs)
     sys.stdout.flush()
 
 last_events = []
@@ -118,21 +118,21 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     def show_system_message(message: SystemMessage):
         writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
-        writeln_indented(message.content)
+        writeln_indented(message.content, markup=False)
 
     def show_human_message(message: HumanMessage):
         writeln(f"{index}. [bold gray0 on slate_blue1]HumanMessage")
-        writeln_indented(message.content)
+        writeln_indented(message.content, markup=False)
 
     def show_ai_message(message: AIMessage):
         writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
             write(f"    [bold]reasoning:[/] ")
-            writeln(reasoning)
+            writeln(reasoning, markup=False)
         if message.content:
             write(f"    [bold]content:[/] ")
-            writeln(message.content)
+            writeln(message.content, markup=False)
         if message.tool_calls:
             for tool_call in message.tool_calls:
                 # writeln_indented(json.dumps(tool_call, indent=2))
@@ -144,7 +144,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
                 args = tool_call.get("args", "")
                 if args:
-                    write(json.dumps(args))
+                    write(json.dumps(args), markup=False)
 
     def show_message(message):
         if isinstance(message, HumanMessage):
@@ -157,8 +157,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             show_ai_message(message)
         else:
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
-            rich.print(f"[red]Unsupported message type: {type(message).__name__}[/]")
-            rich.print(message)
+            console.print(f"[red]Unsupported message type: {type(message).__name__}[/]")
+            console.print(message, markup=False)
         writeln()  # just like on_chat_model_end for non-initial messages
 
     # * show initial messages
@@ -184,7 +184,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
         # # * dump all events except streaming tokens (too many)
         # if event_name not in {"on_chat_model_stream"}:
-        #     rich.print(event)
+        #     console.print(event, markup=False)
         # continue
 
         # * on_tool_start
@@ -268,7 +268,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 if not ai_has_reasoning:
                     write(f"    [bold]reasoning:[/] ")
                     ai_has_reasoning = True
-                write(block.get("reasoning", ""))
+                write(block.get("reasoning", ""), markup=False)
 
             # * model's content
             # content: str = chunk.content # w/o content_blocks
@@ -278,7 +278,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                         writeln()  # new line to end reasoning
                     write(f"    [bold]content:[/] ")
                     ai_has_content = True
-                write(block.get("text", ""))
+                write(block.get("text", ""), markup=False)
 
             # * model's tool call request
             # calls = chunk.tool_call_chunks # w/o content_blocks
@@ -298,7 +298,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 args = tool_call.get("args", "")
                 if args:
                     args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
-                    write(args_indented)
+                    write(args_indented, markup=False)
 
             if SIMULATE_DELAY:
                 MIN_SLEEP = 0.005  # 5 ms
