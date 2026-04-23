@@ -89,6 +89,7 @@ def write(msg: str, *args, **kwargs):
     sys.stdout.flush()
 
 last_events = []
+last_model_name = ""
 
 async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
@@ -218,11 +219,12 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
 
-            # # * show model name
-            # message = data.get("output")
-            # model_name = message.response_metadata.get("model_name")
-            # if model_name:
-            #     writeln(f"    [dim italic]model: {model_name}[/]")
+            # * show model name
+            message = data.get("output")
+            model_name = message.response_metadata.get("model_name")
+            if model_name:
+                last_model_name = model_name
+                # writeln(f"    [dim italic]model: {model_name}[/]")
 
             # # dump to test show_ai_message (otherwise only used for initial messages)
             # if isinstance(message, AIMessage):
