@@ -97,7 +97,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     ai_started = None
     ai_has_reasoning = False
     ai_has_content = False
-    ai_has_tool_call = False
     chunk_count = 0
 
     index = 0
@@ -215,7 +214,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             ai_started = None
             ai_has_reasoning = False
             ai_has_content = False
-            ai_has_tool_call = False
             chunk_count = 0
 
             if SIMULATE_DELAY:
@@ -272,12 +270,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             if block_type == "tool_call_chunk":
                 tool_call = block
                 # call_index = tool_call.get("index", "")
-
-                # if not ai_has_tool_call:
-                #     if ai_has_reasoning or ai_has_content:
-                #         # PRN new line after each tool call too?
-                #         writeln()  # new line to end content/reasoning before this
-                #     ai_has_tool_call = True
 
                 # * first chunk has name+id:
                 name = tool_call.get("name", "")
