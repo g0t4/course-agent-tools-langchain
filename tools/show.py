@@ -232,7 +232,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             #     show_ai_message(message)
             #     writeln()
 
-        # * HumanMessage/ToolMessage/etc (User Message => Model)
         elif event_name == "on_chat_model_start":
             # reset AIMessage (response) detectors
             ai_started = None
