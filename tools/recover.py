@@ -14,7 +14,8 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    HumanMessage("Explain the project in the current directory"),
+    SystemMessage("test"),
+    HumanMessage("Run two commands at the same time: ls and date... but as two separate tool calls to run_command tool"),
 ]
 
 from run_python import run_command, run_python

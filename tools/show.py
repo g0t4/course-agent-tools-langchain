@@ -4,9 +4,8 @@ from rich.padding import Padding
 import json
 import sys
 import asyncio
-from datetime import datetime
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable
 from langchain_core.runnables.schema import StreamEvent
 
@@ -100,10 +99,34 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     ai_has_content = False
     ai_has_tool_call = False
     chunk_count = 0
-    current_event_started_at = datetime.now().timestamp()
-    prior_event_started_at = current_event_started_at
 
     index = 0
+
+    def show_message(message):
+        message_type = type(message).__name__
+        if isinstance(message, HumanMessage) or isinstance(message, SystemMessage):
+            writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
+            writeln_indented(message.content)
+            writeln()
+        elif isinstance(message, ToolMessage):
+            writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage")
+            writeln_indented(display_tool_message(message))
+            writeln()
+        elif isinstance(message, AIMessage):
+            raise NotImplementedError()
+            # TODO review this impl:
+            # writeln(f"{index}. [bold gray0 on deep_sky_blue3]{message_type}")
+            # if isinstance(message.content, str):
+            #     writeln_indented(message.content)
+            # else:
+            #     writeln_indented(json.dumps(message.content))
+        else:
+            raise NotImplementedError(f"Unsupported _INITIAL_ message type: {message_type}")
+
+    # * show initial messages
+    for tool_message in initial_messages:
+        index += 1
+        show_message(tool_message)
 
     event: StreamEvent
     async for event in agent.astream_events({"messages": initial_messages}, ):
@@ -111,18 +134,21 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
 
-        prior_event_started_at = current_event_started_at
-        current_event_started_at = datetime.now().timestamp()
-
         event_name = event["event"]
         data = event['data']
+
+        # # * dump all events except streaming tokens (too many)
+        # if event_name not in {"on_chat_model_stream"}:
+        #     rich.print(event)
+        # continue
 
         # * on_tool_start
         if event_name == "on_tool_start":
             tool_name = event["name"]
             writeln_indented(f"\n[bold gray0 on deep_sky_blue3]{tool_name}")
 
-            args = data["input"]
+            args = data.get("input")
+            assert isinstance(args, dict)
             if tool_name == "run_python":
                 code = args.get("code", "")
                 del args["code"]  # remove so I can show rest of args if any other args encountered (s/b just "code" in this case)
@@ -134,27 +160,19 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             else:
                 writeln_indented(Syntax(json.dumps(args), "json"))
 
+        if event_name == "on_tool_end":
+            index += 1
+            tool_message = data.get("output")
+            assert isinstance(tool_message, ToolMessage)
+            show_message(tool_message)
+
+        # elif event_name == "on_chat_model_end":
+        #     write("... END")
+        #     writeln()
+        #     # rich.print(event)
+
         # * HumanMessage/ToolMessage/etc (User Message => Model)
         elif event_name == "on_chat_model_start":
-            input_messages = data["input"]["messages"][0]
-            user_message = input_messages[-1]  # last message == new user msg
-            message_type = type(user_message).__name__
-            is_tool_message = message_type == "ToolMessage"
-
-            if is_tool_message:
-
-                # simulate delay of at least 1 second
-                took_less_than_a_minute = current_event_started_at - prior_event_started_at < 1
-                if SIMULATE_DELAY and took_less_than_a_minute:
-                    await asyncio.sleep(1 - (current_event_started_at - prior_event_started_at))
-
-            writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
-            if is_tool_message:
-                writeln_indented(display_tool_message(user_message))
-            else:
-                writeln_indented(user_message.content)
-            writeln()
-
             # reset AIMessage (response) detectors
             ai_started = None
             ai_has_reasoning = False
@@ -169,10 +187,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         elif event_name == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
             chunk_count += 1
-            chunk: AIMessageChunk = data.get("chunk", "")
-            # print("chunk", chunk)
-            # print("    ", chunk.content_blocks) # lazy parsed from chunk
-            # continue
+            chunk = data.get("chunk")
+            assert isinstance(chunk, AIMessageChunk)
 
             if not ai_started:
                 index += 1
@@ -183,18 +199,17 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             # standardized content blocks:
             #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
             #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
-            no_content_blocks = len(chunk.content_blocks) == 0
-            if no_content_blocks:
+            if not any(chunk.content_blocks):
                 continue
 
             block = chunk.content_blocks[0]
+            # ? what if len(chunk.content) > 1
             block_type = block.get("type", "")
 
-            # FYI the following assumes sequential chunks per type
+            # FYI the following assumes ordered chunks per type
             #   no interleaving of reasoning/content/tool_call chunks
-            #   chunks are in order
-            #   all reasoning first (if any), then all content, then all tool_call (if any)
-            #   not all providers return reasoning tokens
+            #   all reasoning chunks first (if any) => then content => then tool call(s)
+            # BTW not all providers return reasoning tokens
 
             # * model's reasoning
             # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
@@ -218,7 +233,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             # calls = chunk.tool_call_chunks # w/o content_blocks
             if block_type == "tool_call_chunk":
                 tool_call = block
-                index = tool_call.get("index", "")
+                call_index = tool_call.get("index", "")
 
                 # if not ai_has_tool_call:
                 #     if ai_has_reasoning or ai_has_content:
@@ -229,7 +244,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 # * first chunk has name+id:
                 name = tool_call.get("name", "")
                 if name:
-                    write(f"\n    [bold]{index}:{name}[/]")
+                    write(f"\n    [bold]{call_index}:{name}[/]")
                     # start args on next line, indented
                     write("\n" + indent2_spaces)
 
