@@ -92,6 +92,8 @@ last_events = []
 last_model_name = ""
 
 async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
+    global last_model_name
+
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
     #  thus, if there's a probelm showing something, log a warning and continue
     #  AND that's why events returns the list of events, that way if the history is meaningful to fix the issue... it is available!
@@ -221,10 +223,9 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
             # * show model name
             message = data.get("output")
-            model_name = message.response_metadata.get("model_name")
-            if model_name:
-                last_model_name = model_name
-                # writeln(f"    [dim italic]model: {model_name}[/]")
+            last_model_name = message.response_metadata.get("model_name")
+            if last_model_name:
+                # writeln(f"    [dim italic]model: {last_model_name}[/]")
 
             # # dump to test show_ai_message (otherwise only used for initial messages)
             # if isinstance(message, AIMessage):
@@ -316,4 +317,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                     decay_factor = (chunk_count - 1) / 99
                     ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
                 await asyncio.sleep(ms)
+
+    if last_model_name:
+        writeln(f"    [dim italic]last model used: {last_model_name}[/]")
     return events
