@@ -102,39 +102,52 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     index = 0
 
-    def show_tool_message(message):
+    def show_tool_message(message: ToolMessage):
         writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage")
         writeln_indented(display_tool_message(message))
-        writeln()
 
-    def show_system_message(message, message_type):
+    def show_system_message(message: SystemMessage):
         writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
         writeln_indented(message.content)
-        writeln()
 
-    def show_human_message(message, message_type):
+    def show_human_message(message: HumanMessage):
         writeln(f"{index}. [bold gray0 on slate_blue1]HumanMessage")
         writeln_indented(message.content)
-        writeln()
+
+    def show_ai_message(message: AIMessage):
+        writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
+        reasoning = message.additional_kwargs.get("reasoning_content")
+        if reasoning:
+            write(f"    [bold]reasoning:[/] ")
+            writeln(reasoning)
+        if message.content:
+            write(f"    [bold]content:[/] ")
+            writeln(message.content)
+        if message.tool_calls:
+            for call_index, tool_call in enumerate(message.tool_calls):
+                # writeln_indented(json.dumps(tool_call, indent=2))
+                name = tool_call.get("name", "")
+                if name:
+                    write(f"\n    [bold]{call_index}:{name}[/]")
+                    write("\n" + indent2_spaces)
+
+                args = tool_call.get("args", "")
+                if args:
+                    write(json.dumps(args))
 
     def show_message(message):
         message_type = type(message).__name__
         if isinstance(message, HumanMessage):
-            show_human_message(message, message_type)
+            show_human_message(message)
         elif isinstance(message, SystemMessage):
-            show_system_message(message, message_type)
+            show_system_message(message)
         elif isinstance(message, ToolMessage):
             show_tool_message(message)
         elif isinstance(message, AIMessage):
-            raise NotImplementedError()
-            # TODO review this impl:
-            # writeln(f"{index}. [bold gray0 on deep_sky_blue3]{message_type}")
-            # if isinstance(message.content, str):
-            #     writeln_indented(message.content)
-            # else:
-            #     writeln_indented(json.dumps(message.content))
+            show_ai_message(message)
         else:
             raise NotImplementedError(f"Unsupported _INITIAL_ message type: {message_type}")
+        writeln()  # just like on_chat_model_end for non-initial messages
 
     # * show initial messages
     for tool_message in initial_messages:
@@ -179,10 +192,14 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             assert isinstance(tool_message, ToolMessage)
             show_message(tool_message)
 
-        # elif event_name == "on_chat_model_end":
-        #     write("... END")
-        #     writeln()
-        #     # rich.print(event)
+        elif event_name == "on_chat_model_end":
+            writeln()  # all messages end with blank line
+
+            # # dump to test show_ai_message (otherwise only used for initial messages)
+            # message = data.get("output")
+            # if isinstance(message, AIMessage):
+            #     show_ai_message(message)
+            #     writeln()
 
         # * HumanMessage/ToolMessage/etc (User Message => Model)
         elif event_name == "on_chat_model_start":
@@ -207,7 +224,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 index += 1
                 ai_started = True
                 message_type = type(chunk).__name__  # * role
-                writeln(f"{index}. [bold gray0 on deep_sky_blue3]{message_type}")
+                writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
 
             # standardized content blocks:
             #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
