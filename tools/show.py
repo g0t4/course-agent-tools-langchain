@@ -76,8 +76,8 @@ def _format_tool_message_for_run_command(message: ToolMessage) -> str:
     lines = [f"[bold]{k}[/]:\n {v}" for k, v in obj.items()]
     return "\n".join(lines)
 
-def writeln_indented(msg: str | Syntax):
-    rich.print(Padding(msg, (0, 0, 0, 4)))
+def writeln_indented(msg: str | Syntax, *args, **kwargs):
+    console.print(Padding(msg, (0, 0, 0, 4)), *args, **kwargs)
     sys.stdout.flush()
 
 def writeln(msg: str | Padding | None = ""):
@@ -114,7 +114,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         show_id = ({id})
         writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
-        writeln_indented(format_tool_message_content(message))
+        writeln_indented(format_tool_message_content(message), markup=False)
 
     def show_system_message(message: SystemMessage):
         writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
