@@ -149,7 +149,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 if args:
                     write(json.dumps(args), markup=False)
 
-    def show_message(message):
+    def _show_message(message):
         if isinstance(message, HumanMessage):
             show_human_message(message)
         elif isinstance(message, SystemMessage):
@@ -167,7 +167,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     # * show initial messages
     for tool_message in initial_messages:
         index += 1
-        show_message(tool_message)
+        _show_message(tool_message)
 
     events = []
     global last_events
@@ -216,7 +216,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             index += 1
             tool_message = data.get("output")
             assert isinstance(tool_message, ToolMessage)
-            show_message(tool_message)
+            _show_message(tool_message)
 
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
