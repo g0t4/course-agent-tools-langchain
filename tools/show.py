@@ -140,7 +140,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                     write(json.dumps(args))
 
     def show_message(message):
-        message_type = type(message).__name__
         if isinstance(message, HumanMessage):
             show_human_message(message)
         elif isinstance(message, SystemMessage):
@@ -150,7 +149,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         elif isinstance(message, AIMessage):
             show_ai_message(message)
         else:
-            raise NotImplementedError(f"Unsupported _INITIAL_ message type: {message_type}")
+            raise NotImplementedError(f"Unsupported _INITIAL_ message type: {type(message).__name__}")
         writeln()  # just like on_chat_model_end for non-initial messages
 
     # * show initial messages
@@ -232,7 +231,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             if not ai_started:
                 index += 1
                 ai_started = True
-                message_type = type(chunk).__name__  # * role
                 writeln(f"{index}. [bold gray0 on deep_sky_blue3]AIMessage")
 
             # standardized content blocks:
