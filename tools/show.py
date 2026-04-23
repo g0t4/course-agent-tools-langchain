@@ -51,9 +51,9 @@ def clear_screen():
 def display_tool_message(message: ToolMessage) -> str:
     content = message.content
     if message.name == "run_command":
-        display_tool_run_command(message)
+        return display_tool_run_command(message)
     # if message.name == "run_python":
-    #     display_tool_run_python(message)
+    #     return display_tool_run_python(message)
     if isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
@@ -64,12 +64,12 @@ def display_tool_message(message: ToolMessage) -> str:
 def display_tool_run_command(message: ToolMessage) -> str:
     content = message.content
     if not isinstance(content, str):
-        rich.print('[red]run_command message.content should be a string, but is not... ')
+        rich.print('[red]run_command message.content should be a string, but is not... [/]')
         return json.dumps(content)
     try:
         obj = json.loads(content)
     except json.JSONDecodeError:
-        rich.print("[red]failed to load JSON result...")
+        rich.print("[red]failed to load JSON result...[/]")
         return content
     lines = [f"[bold]{k}[/]:\n {v}" for k, v in obj.items()]
     return "\n".join(lines)
@@ -103,7 +103,9 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     index = 0
 
     def show_tool_message(message: ToolMessage):
-        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage")
+        name = message.name
+        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/]")
+        # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         writeln_indented(display_tool_message(message))
 
     def show_system_message(message: SystemMessage):
