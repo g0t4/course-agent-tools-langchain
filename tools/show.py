@@ -102,6 +102,11 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     index = 0
 
+    def show_tool_message(message):
+        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage")
+        writeln_indented(display_tool_message(message))
+        writeln()
+
     def show_message(message):
         message_type = type(message).__name__
         if isinstance(message, HumanMessage) or isinstance(message, SystemMessage):
@@ -109,9 +114,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             writeln_indented(message.content)
             writeln()
         elif isinstance(message, ToolMessage):
-            writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage")
-            writeln_indented(display_tool_message(message))
-            writeln()
+            show_tool_message(message)
         elif isinstance(message, AIMessage):
             raise NotImplementedError()
             # TODO review this impl:
