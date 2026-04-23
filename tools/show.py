@@ -157,6 +157,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         index += 1
         show_message(tool_message)
 
+    events = []
     event: StreamEvent
     async for event in agent.astream_events({"messages": initial_messages},
                                             # config={"recursion_limit": 65}
@@ -164,6 +165,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
+
+        events.append(event)
 
         event_name = event["event"]
         data = event['data']
@@ -295,3 +298,4 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                     decay_factor = (chunk_count - 1) / 99
                     ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
                 await asyncio.sleep(ms)
+    return events
