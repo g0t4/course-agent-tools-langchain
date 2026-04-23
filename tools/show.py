@@ -86,7 +86,12 @@ def write(msg: str):
     rich.print(msg, end="")
     sys.stdout.flush()
 
+last_events = []
+
 async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
+    # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
+    #  thus, if there's a probelm showing something, log a warning and continue
+    #  AND that's why events returns the list of events, that way if the history is meaningful to fix the issue... it is available!
 
     clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
 
@@ -160,6 +165,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         show_message(tool_message)
 
     events = []
+    global last_events
+    last_events = events
     event: StreamEvent
     async for event in agent.astream_events({"messages": initial_messages},
                                             # config={"recursion_limit": 65}
