@@ -173,7 +173,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         # * on_tool_start
         if event_name == "on_tool_start":
             tool_name = event["name"]
-            writeln_indented(f"\n[bold gray0 on deep_sky_blue3]{tool_name}")
+            writeln_indented(f"[bold gray0 on deep_sky_blue3]{tool_name}")
 
             args = data.get("input")
             assert isinstance(args, dict)
@@ -187,6 +187,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 writeln_indented(Syntax(commandline, "bash"))
             else:
                 writeln_indented(Syntax(json.dumps(args), "json"))
+            writeln()
 
         if event_name == "on_tool_end":
             index += 1
