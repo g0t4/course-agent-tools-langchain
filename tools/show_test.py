@@ -11,7 +11,9 @@ from langchain_llama_server import ChatLlamaServer
 model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 
     # Qwen3.6 via llama-server
-    extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
+    extra_body={"chat_template_kwargs": { "enable_thinking": False },
+                "parallel_tool_calls": True
+                }, \
     # comment out to test how reasoning displays
 
 )
