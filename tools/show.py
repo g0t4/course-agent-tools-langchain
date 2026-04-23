@@ -54,12 +54,14 @@ def display_tool_message(message: ToolMessage) -> str:
         return display_tool_run_command(message)
     # if message.name == "run_python":
     #     return display_tool_run_python(message)
-    if isinstance(content, str):
+    elif isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
             return "\n".join(lines[:5]) + "\n..."
-        return content  # return all lines
-    return json.dumps(content)
+        else:
+            return content  # return all lines
+    else:
+        return json.dumps(content)
 
 def display_tool_run_command(message: ToolMessage) -> str:
     content = message.content
