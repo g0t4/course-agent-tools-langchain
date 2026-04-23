@@ -22,5 +22,8 @@ from run_python import run_command, run_python
 
 agent = create_agent(model, tools=[run_python, run_command])
 
+import show
+# show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
 from show import stream_messages
-await stream_messages(agent, messages) # pyright: ignore
+
+events = await stream_messages(agent, messages) # pyright: ignore
