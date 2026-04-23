@@ -104,7 +104,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     def show_tool_message(message: ToolMessage):
         name = message.name
         id = message.tool_call_id
-        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name} ({id})[/]")
+        show_id = ({id})
+        writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         writeln_indented(display_tool_message(message))
 
