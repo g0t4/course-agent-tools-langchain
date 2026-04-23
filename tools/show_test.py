@@ -17,10 +17,15 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    SystemMessage("test"),
-    HumanMessage("Run two commands in parallel: run_command(hostname) and run_command(date)"),
-    AIMessage("NO"),
-    HumanMessage("NOW!"),
+    # SystemMessage("test"),
+    # HumanMessage("Run two commands in parallel: run_command(hostname) and run_command(date)"),
+    # AIMessage("NO"),
+    # HumanMessage("NOW!"),
+
+    # * demo recursion limit quickly (esp. w/ thinking off)
+    HumanMessage("I want you to run the date command 30 times, ONE run_command at a time, echo the value you get each time and then repeat."),
+    # GraphRecursionError: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
+    # For troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT
 ]
 
 from run_python import run_command, run_python
