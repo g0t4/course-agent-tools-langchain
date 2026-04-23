@@ -218,8 +218,13 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
 
-            # # dump to test show_ai_message (otherwise only used for initial messages)
+            # # * show model name
             # message = data.get("output")
+            # model_name = message.response_metadata.get("model_name")
+            # if model_name:
+            #     writeln(f"    [dim italic]model: {model_name}[/]")
+
+            # # dump to test show_ai_message (otherwise only used for initial messages)
             # if isinstance(message, AIMessage):
             #     show_ai_message(message)
             #     writeln()
