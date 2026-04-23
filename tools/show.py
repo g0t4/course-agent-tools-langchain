@@ -48,10 +48,10 @@ def clear_screen():
     # optional, clear screen first:
     get_ipython().run_line_magic("clear", "")
 
-def display_tool_message(message: ToolMessage) -> str:
+def format_tool_message_content(message: ToolMessage) -> str:
     content = message.content
     if message.name == "run_command":
-        return display_tool_run_command(message)
+        return _format_tool_message_for_run_command(message)
     # if message.name == "run_python":
     #     return display_tool_run_python(message)
     elif isinstance(content, str):
@@ -63,7 +63,7 @@ def display_tool_message(message: ToolMessage) -> str:
     else:
         return json.dumps(content)
 
-def display_tool_run_command(message: ToolMessage) -> str:
+def _format_tool_message_for_run_command(message: ToolMessage) -> str:
     content = message.content
     if not isinstance(content, str):
         rich.print('[red]run_command message.content should be a string, but is not... [/]')
@@ -114,7 +114,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         show_id = ({id})
         writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
-        writeln_indented(display_tool_message(message))
+        writeln_indented(format_tool_message_content(message))
 
     def show_system_message(message: SystemMessage):
         writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
