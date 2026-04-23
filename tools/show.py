@@ -107,15 +107,22 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         writeln_indented(display_tool_message(message))
         writeln()
 
+    def show_system_message(message, message_type):
+        writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
+        writeln_indented(message.content)
+        writeln()
+
     def show_human_message(message, message_type):
-        writeln(f"{index}. [bold gray0 on slate_blue1]{message_type}")
+        writeln(f"{index}. [bold gray0 on slate_blue1]HumanMessage")
         writeln_indented(message.content)
         writeln()
 
     def show_message(message):
         message_type = type(message).__name__
-        if isinstance(message, HumanMessage) or isinstance(message, SystemMessage):
+        if isinstance(message, HumanMessage):
             show_human_message(message, message_type)
+        elif isinstance(message, SystemMessage):
+            show_system_message(message, message_type)
         elif isinstance(message, ToolMessage):
             show_tool_message(message)
         elif isinstance(message, AIMessage):
