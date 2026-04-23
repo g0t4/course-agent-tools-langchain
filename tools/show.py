@@ -224,8 +224,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
             # * show model name
             message = data.get("output")
             last_model_name = message.response_metadata.get("model_name")
-            if last_model_name:
-                # writeln(f"    [dim italic]model: {last_model_name}[/]")
+            # if last_model_name:
+            #      writeln(f"    [dim italic]model: {last_model_name}[/]")
 
             # # dump to test show_ai_message (otherwise only used for initial messages)
             # if isinstance(message, AIMessage):
