@@ -210,12 +210,13 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                 code = args.get("code", "")
                 del args["code"]  # remove so I can show rest of args if any other args encountered (s/b just "code" in this case)
                 writeln_indented(Syntax(code, "python"))
+                writeln()
             elif tool_name == "run_command":
                 commandline = args.get("commandline", "")
                 del args["commandline"]
                 writeln_indented(Syntax(commandline, "bash"))
-            # FYI no reason to dump JSON again
-            writeln()
+                writeln()
+            # else: FYI no reason to dump JSON again
 
         if event_name == "on_tool_end":
             message_index += 1
