@@ -136,10 +136,8 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
         # * HumanMessage/ToolMessage/etc (User Message => Model)
         elif event_name == "on_chat_model_start":
-            index += 1
-            input = data.get("input", "")
-            history = input.get("messages", "")[0]
-            user_message = history[-1]  # last message == new user msg
+            input_messages = data["input"]["messages"][0]
+            user_message = input_messages[-1]  # last message == new user msg
             message_type = type(user_message).__name__
             is_tool_message = message_type == "ToolMessage"
 
