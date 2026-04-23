@@ -15,7 +15,7 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 
 messages = [
     SystemMessage("test"),
-    HumanMessage("Run two commands at the same time: ls and date... but as two separate tool calls to run_command tool"),
+    HumanMessage("Run two commands at the same time: hostname and date... but as two separate tool calls to run_command tool"),
     AIMessage("NO"),
     HumanMessage("NOW!"),
 ]
