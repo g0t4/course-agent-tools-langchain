@@ -87,7 +87,7 @@ def write(msg: str):
     rich.print(msg, end="")
     sys.stdout.flush()
 
-async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
+async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
     clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
 
@@ -106,7 +106,7 @@ async def stream_messages(agent: Runnable, messages: list[BaseMessage]):
     index = 0
 
     event: StreamEvent
-    async for event in agent.astream_events({"messages": messages}, ):
+    async for event in agent.astream_events({"messages": initial_messages}, ):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
