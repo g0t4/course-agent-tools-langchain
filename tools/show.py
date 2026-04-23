@@ -48,33 +48,38 @@ def clear_screen():
     # optional, clear screen first:
     get_ipython().run_line_magic("clear", "")
 
-def format_tool_message_content(message: ToolMessage) -> str:
+def display_tool_message_content(message: ToolMessage):
     content = message.content
     if message.name == "run_command":
-        return _format_tool_message_for_run_command(message)
-    # if message.name == "run_python":
-    #     return display_tool_run_python(message)
+        _display_tool_message_for_run_command(message)
+    # elif message.name == "run_python":
+    #    _display_tool_run_python(message)
     elif isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
-            return "\n".join(lines[:5]) + "\n..."
+            writeln_indented("\n".join(lines[:5]) + "\n...", markup=False)
         else:
-            return content  # return all lines
+            writeln_indented(content, markup=False)  # return all lines
     else:
-        return json.dumps(content)
+        writeln_indented(json.dumps(content))
 
-def _format_tool_message_for_run_command(message: ToolMessage) -> str:
+def _display_tool_message_for_run_command(message: ToolMessage):
     content = message.content
     if not isinstance(content, str):
         console.print('[red]run_command message.content should be a string, but is not... [/]')
-        return json.dumps(content)
+        writeln_indented(json.dumps(content), markup=False)
+        return
+
     try:
         obj = json.loads(content)
     except json.JSONDecodeError:
         console.print("[red]failed to load JSON result...[/]")
-        return content
-    lines = [f"[bold]{k}[/]:\n {v}" for k, v in obj.items()]
-    return "\n".join(lines)
+        writeln_indented(content, markup=False)
+        return
+
+    for k, v in obj.items():
+        writeln_indented(f"[bold]{k}[/]:", markup=True)
+        writeln_indented(str(v), markup=False)  # PRN dump value as json depending on value?
 
 def writeln_indented(msg: str | Syntax, *args, **kwargs):
     console.print(Padding(msg, (0, 0, 0, 4)), *args, **kwargs)
@@ -117,7 +122,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         show_id = ({id})
         writeln(f"{index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
-        writeln_indented(format_tool_message_content(message), markup=False)
+        display_tool_message_content(message)
 
     def show_system_message(message: SystemMessage):
         writeln(f"{index}. [bold gray0 on gold1]SystemMessage")
