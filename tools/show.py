@@ -219,6 +219,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
         if event_name == "on_tool_end":
             index += 1
+            # * show ToolMessage
             tool_message = data.get("output")
             assert isinstance(tool_message, ToolMessage)
             _show_message(tool_message)
