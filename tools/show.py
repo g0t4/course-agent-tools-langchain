@@ -318,6 +318,6 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
                     ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
                 await asyncio.sleep(ms)
 
-    if last_model_name:
-        writeln(f"    [dim italic]last model used: {last_model_name}[/]")
+    # if last_model_name:
+    #     writeln(f"    [dim italic]last model used: {last_model_name}[/]")
     return events
