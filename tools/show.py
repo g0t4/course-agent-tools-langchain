@@ -149,7 +149,9 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
         elif isinstance(message, AIMessage):
             show_ai_message(message)
         else:
-            raise NotImplementedError(f"Unsupported _INITIAL_ message type: {type(message).__name__}")
+            # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
+            rich.print(f"[red]Unsupported message type: {type(message).__name__}[/]")
+            rich.print(message)
         writeln()  # just like on_chat_model_end for non-initial messages
 
     # * show initial messages
