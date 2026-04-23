@@ -14,8 +14,9 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    HumanMessage("Read show.py and investigate how I display the tool call ID value... add a function to shorten the ID to a max of first 6 chars and use that to show the ID"),
+    # HumanMessage("Read show.py and investigate how I display the tool call ID value... add a function to shorten the ID to a max of first 6 chars and use that to show the ID"),
     # HumanMessage("Explain this project, in the current directory"),
+    HumanMessage("Read show.py and modify stream_messages to show the AI model used when generating a message"),
 ]
 
 from run_python import run_command, run_python
