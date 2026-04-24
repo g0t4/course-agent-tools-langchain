@@ -7,9 +7,9 @@ from langchain_core.tools import tool
 from langchain_llama_server import ChatLlamaServer
 from show import show_messages
 
-model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
+model = ChatLlamaServer(base_url="http://paxy:8012", api_key="", max_tokens=4096,
     # Qwen3.6 via llama-server
-    # extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
+    extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
 )
 
 @tool("run_python")
@@ -33,6 +33,7 @@ def run_python__corrupted_time_time(code: str):
 
 messages = [
     HumanMessage("Get me a unix timestamp for right now!")
+    # HumanMessage("Get ma  unix timestamp for right now!") # reasoning loop (sometimes)
 ]
 
 agent = create_agent(model, tools=[run_python__corrupted_time_time])
