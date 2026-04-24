@@ -26,16 +26,12 @@ def run_python(code: str):
     return stdout.getvalue()
 
 @tool(description="Execute a shell commandline and return its STDOUT.")
-def run_command(commandline: str) -> dict[str, str | int]:
+def run_command(commandline: str):
     import subprocess
 
     # block ls -R
     if commandline.strip().startswith("ls -R"):
-        return {
-            "stdout": "Recursive listing with `ls -R` is blocked because `ls` has no default mechanism to exclude directories like node_modules, .venv, etc. This leads to an explosion of output. Use `fd --type file` to recursively list files.",
-            "stderr": "Command blocked",
-            "returncode": 1,
-        }
+        return "COMMAND BLOCKED. Recursive listing with `ls -R` is blocked because `ls` has no default mechanism to exclude directories like node_modules, .venv, etc. This leads to an explosion of output. Use `fd --type file` to recursively list files."
 
     result = subprocess.run(
         commandline,
