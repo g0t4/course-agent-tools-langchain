@@ -206,12 +206,12 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
 
             args = data.get("input")
             assert isinstance(args, dict)
-            if tool_name == "run_python":
+            if tool_name.startswith("run_python"):
                 code = args.get("code", "")
                 del args["code"]  # remove so I can show rest of args if any other args encountered (s/b just "code" in this case)
                 writeln_indented(Syntax(code, "python"))
                 writeln()
-            elif tool_name == "run_command":
+            elif tool_name.startswith("run_command"):
                 commandline = args.get("commandline", "")
                 del args["commandline"]
                 writeln_indented(Syntax(commandline, "bash"))
