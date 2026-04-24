@@ -1,4 +1,6 @@
+from langgraph.types import Command
 import rich
+from rich.console import RenderableType
 from rich.syntax import Syntax
 from rich.padding import Padding
 import json
@@ -81,29 +83,27 @@ def _display_tool_message_for_run_command(message: ToolMessage):
         writeln_indented(f"[bold]{k}[/]:", markup=True)
         writeln_indented(str(v), markup=False)  # PRN dump value as json depending on value?
 
-def writeln_indented(msg: str | Syntax, *args, **kwargs):
+def writeln_indented(msg: RenderableType, *args, **kwargs):
     console.print(Padding(msg, (0, 0, 0, 4)), *args, **kwargs)
     sys.stdout.flush()
 
-def writeln(msg: str | Padding | None = "", *args, **kwargs):
+def writeln(msg: RenderableType = "", *args, **kwargs):
     console.print(msg or "", *args, **kwargs)
     sys.stdout.flush()
 
-def write(msg: str, *args, **kwargs):
+def write(msg: RenderableType, *args, **kwargs):
     console.print(msg, end="", *args, **kwargs)
     sys.stdout.flush()
 
 last_events = []
 last_model_name = ""
 
-async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage], *args, **kwargs):
+async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *args, **kwargs):
     global last_model_name
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
     #  thus, if there's a probelm showing something, log a warning and continue
     #  AND that's why events returns the list of events, that way if the history is meaningful to fix the issue... it is available!
-
-    clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
 
     SIMULATE_DELAY = False  # artificial delay so you can see chat progression when tok/sec is high (i.e. 200 tok/sec)
     indent2_spaces = " " * 8
@@ -169,16 +169,33 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage], 
             console.print(message, markup=False)
         writeln()  # just like on_chat_model_end for non-initial messages
 
-    # * show initial messages
-    for tool_message in initial_messages:
-        message_index += 1
-        _show_message(tool_message)
+    if isinstance(input, Command):
+        # command => ok as is
+        pass
+    elif isinstance(input, dict) and "messages" in input:
+        # FYI I am not using this, just added this in case
+        # someone passes { "messages": ... } like you would to astream_events
+        # don't double wrap in that case
+        for msg in input["messages"]:
+            message_index += 1
+            _show_message(msg)
+    else:
+        # convenience to wrap in messages dict
+        clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
+        initial_messages = input
+        input = {"messages": initial_messages}
+        # * show initial messages
+        for tool_message in initial_messages:
+            message_index += 1
+            _show_message(tool_message)
 
     events = []
     global last_events
     last_events = events
     event: StreamEvent
-    async for event in agent.astream_events({"messages": initial_messages}, *args, **kwargs):
+
+    # make explicit I designed around "v2"
+    async for event in agent.astream_events(input, *args, version="v2", **kwargs):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
@@ -191,7 +208,81 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage], 
         # # * dump all events except streaming tokens (too many)
         # if event_name not in {"on_chat_model_stream"}:
         #     console.print(event, markup=False)
-        # continue
+        # # continue
+
+        # * on_chain_stream
+        if event_name == "on_chain_stream":
+            # trigger HITL approvals
+            #   use gptoss for one at a time
+            #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
+            # Interrupt(
+            #     value={
+            #         'action_requests': [
+            #             {
+            #                 'name': 'run_command',
+            #                 'args': {'commandline': 'hostname'},
+            #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
+            # {'commandline': 'hostname'}"
+            #             },
+            #             {
+            #                 'name': 'run_command',
+            #                 'args': {'commandline': 'date'},
+            #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
+            # {'commandline': 'date'}"
+            #             }
+            #         ],
+            #         'review_configs': [
+            #             {
+            #                 'action_name': 'run_command',
+            #                 'allowed_decisions': ['approve', 'edit', 'reject']
+            #             },
+            #             {
+            #                 'action_name': 'run_command',
+            #                 'allowed_decisions': ['approve', 'edit', 'reject']
+            #             }
+            #         ]
+            #     },
+            #     id='8784b505500ed4b71d24ba3105d43dfc'
+            # )
+            chunk = data.get("chunk")
+            if not chunk:
+                continue
+            if not isinstance(chunk, dict):
+                continue
+            __interrupt__ = chunk.get("__interrupt__")
+            if not __interrupt__:
+                continue
+            for interrupt in __interrupt__:
+                writeln()
+                writeln("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
+                # console.print(interrupt) # dump interrupt object (like above)
+                actions = interrupt.value.get("action_requests", [])
+                review_configs = interrupt.value.get("review_configs", [])
+                assert len(actions) == len(review_configs)
+                # actions and review configs correspond
+                for idx, (request, config) in enumerate(zip(actions, review_configs), start=1):
+                    #
+                    description = request.get('description')  # description usually is just prefix + tool name + args
+                    name = request.get('name')
+                    args = request.get('args', {})
+                    #
+                    action_name = config.get('action_name')
+                    allowed = ', '.join(config.get('allowed_decisions', []))
+                    description = description.replace("\n", "\n    ")
+                    # FYI description can be customized per tool, else just has tool name + args pre-expanded into a prompt format (so you can just build it yourself in most cases unless you want a tool's description customization)
+                    # writeln_indented(f"{idx}. {description}", markup=False) # use generic description
+                    writeln()
+                    writeln_indented(f"{idx}. [bold]{name}[/]")
+                    if args:
+                        if name.startswith("run_python"):
+                            code = args.get("code", "")
+                            writeln_indented(Padding(Syntax(code, "python"), pad=(0, 0, 0, 4)))
+                        elif name.startswith("run_command"):
+                            commandline = args.get("commandline", "")
+                            writeln_indented(Padding(Syntax(commandline, "bash"), pad=(0, 0, 0, 4)))
+                        else:
+                            writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
+                    writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
 
         # * on_tool_start
         if event_name == "on_tool_start":
@@ -206,12 +297,10 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage], 
             assert isinstance(args, dict)
             if tool_name.startswith("run_python"):
                 code = args.get("code", "")
-                del args["code"]  # remove so I can show rest of args if any other args encountered (s/b just "code" in this case)
                 writeln_indented(Syntax(code, "python"))
                 writeln()
             elif tool_name.startswith("run_command"):
                 commandline = args.get("commandline", "")
-                del args["commandline"]
                 writeln_indented(Syntax(commandline, "bash"))
                 writeln()
             # else: FYI no reason to dump JSON again
