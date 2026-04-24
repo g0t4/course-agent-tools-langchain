@@ -96,7 +96,7 @@ def write(msg: str, *args, **kwargs):
 last_events = []
 last_model_name = ""
 
-async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
+async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage], *args, **kwargs):
     global last_model_name
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
@@ -178,9 +178,7 @@ async def stream_messages(agent: Runnable, initial_messages: list[BaseMessage]):
     global last_events
     last_events = events
     event: StreamEvent
-    async for event in agent.astream_events({"messages": initial_messages},
-                                            # config={"recursion_limit": 65}
-                                            ):
+    async for event in agent.astream_events({"messages": initial_messages}, *args, **kwargs):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
