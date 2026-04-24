@@ -8,7 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 from langchain_core.tools import tool
 from langchain_llama_server import ChatLlamaServer
 
-model = ChatLlamaServer(base_url="http://paxy:8013", api_key="",
+model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
     # Qwen3.6 via llama-server
     # extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
 )
@@ -19,7 +19,7 @@ messages = [
     # SystemMessage("Do not use slow commands like `ls -R`"),
     # HumanMessage("Explain this project, in the ~/repos/github/g0t4/mcp-server-commands"),
     #
-    # HumanMessage("Read show.py and investigate how I display the tool call ID value... add a function to shorten the ID to a max of first 6 chars and use that to show the ID"),
+    HumanMessage("Read show.py and investigate how I display the tool call ID value... add a function to shorten the ID to a max of first 6 chars and use that to show the ID"),
     # HumanMessage("What does the code in `cat show.lua` do?"),
 ]
 
