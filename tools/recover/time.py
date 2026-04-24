@@ -33,7 +33,6 @@ def run_python__corrupted_time_time(code: str):
 
 messages = [
     HumanMessage("Get me a unix timestamp for right now!")
-    # HumanMessage("Get ma  unix timestamp for right now!") # sometimes goes into a reasoning spiral in final message => max tokens, total time to complete response
 ]
 
 agent = create_agent(model, tools=[run_python__corrupted_time_time])
