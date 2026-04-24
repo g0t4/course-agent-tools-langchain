@@ -37,6 +37,7 @@ def run_command(commandline: str) -> dict[str, str | int]:
     )
     return {
         "stdout": result.stdout,
+        "stderr": result.stderr,
         "returncode": result.returncode,
     }
 
