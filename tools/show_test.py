@@ -19,13 +19,13 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    SystemMessage("test"),
-    HumanMessage("Run two commands in parallel: run_command(hostname) and run_command(date)"),
-    AIMessage("NO"),
-    HumanMessage("NOW!"),
+    # SystemMessage("test"),
+    # HumanMessage("Run two commands in parallel: run_command(hostname) and run_command(date)"),
+    # AIMessage("NO"),
+    # HumanMessage("NOW!"),
 
     # * demo recursion limit quickly (esp. w/ thinking off)
-    # HumanMessage("I want you to run the date command 30 times, ONE run_command at a time, echo the value you get each time and then repeat."),
+    HumanMessage("I want you to run the date command 21 times, ONE run_command at a time, echo the value you get each time and then repeat."),
     # GraphRecursionError: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.
     # For troubleshooting, visit: https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT
 ]
@@ -38,4 +38,4 @@ import show
 # show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
 from show import stream_messages
 
-events = await stream_messages(agent, messages) # pyright: ignore
+events = await stream_messages(agent, messages, config={"recursion_limit": 40}) # pyright: ignore
