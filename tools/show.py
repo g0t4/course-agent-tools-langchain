@@ -148,13 +148,13 @@ def show_pending_approvals(data):
         # actions and review configs correspond
         for idx, (request, config) in enumerate(zip(actions, review_configs), start=1):
             #
-            description = request.get('description')  # description usually is just prefix + tool name + args
+            # description = request.get('description')  # description usually is just prefix + tool name + args
             name = request.get('name')
             args = request.get('args', {})
             #
             action_name = config.get('action_name')
             allowed = ', '.join(config.get('allowed_decisions', []))
-            description = description.replace("\n", "\n    ")
+            # description = description.replace("\n", "\n    ")
             # FYI description can be customized per tool, else just has tool name + args pre-expanded into a prompt format (so you can just build it yourself in most cases unless you want a tool's description customization)
             # writeln_indented(f"{idx}. {description}", markup=False) # use generic description
             writeln()
