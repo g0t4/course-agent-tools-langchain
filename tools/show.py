@@ -95,6 +95,81 @@ def write(msg: RenderableType, *args, **kwargs):
     console.print(msg, end="", *args, **kwargs)
     sys.stdout.flush()
 
+def show_pending_approvals(data):
+    # trigger HITL approvals
+    #   use gptoss for one at a time
+    #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
+    # Interrupt(
+    #     value={
+    #         'action_requests': [
+    #             {
+    #                 'name': 'run_command',
+    #                 'args': {'commandline': 'hostname'},
+    #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
+    # {'commandline': 'hostname'}"
+    #             },
+    #             {
+    #                 'name': 'run_command',
+    #                 'args': {'commandline': 'date'},
+    #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
+    # {'commandline': 'date'}"
+    #             }
+    #         ],
+    #         'review_configs': [
+    #             {
+    #                 'action_name': 'run_command',
+    #                 'allowed_decisions': ['approve', 'edit', 'reject']
+    #             },
+    #             {
+    #                 'action_name': 'run_command',
+    #                 'allowed_decisions': ['approve', 'edit', 'reject']
+    #             }
+    #         ]
+    #     },
+    #     id='8784b505500ed4b71d24ba3105d43dfc'
+    # )
+    chunk = data.get("chunk")
+    if not chunk:
+        return
+    if not isinstance(chunk, dict):
+        return
+
+    __interrupt__ = chunk.get("__interrupt__")
+    if not __interrupt__:
+        return
+
+    for interrupt in __interrupt__:
+        writeln()
+        writeln("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
+        # console.print(interrupt) # dump interrupt object (like above)
+        actions = interrupt.value.get("action_requests", [])
+        review_configs = interrupt.value.get("review_configs", [])
+        assert len(actions) == len(review_configs)
+        # actions and review configs correspond
+        for idx, (request, config) in enumerate(zip(actions, review_configs), start=1):
+            #
+            description = request.get('description')  # description usually is just prefix + tool name + args
+            name = request.get('name')
+            args = request.get('args', {})
+            #
+            action_name = config.get('action_name')
+            allowed = ', '.join(config.get('allowed_decisions', []))
+            description = description.replace("\n", "\n    ")
+            # FYI description can be customized per tool, else just has tool name + args pre-expanded into a prompt format (so you can just build it yourself in most cases unless you want a tool's description customization)
+            # writeln_indented(f"{idx}. {description}", markup=False) # use generic description
+            writeln()
+            writeln_indented(f"{idx}. [bold]{name}[/]")
+            if args:
+                if name.startswith("run_python"):
+                    code = args.get("code", "")
+                    writeln_indented(Padding(Syntax(code, "python"), pad=(0, 0, 0, 4)))
+                elif name.startswith("run_command"):
+                    commandline = args.get("commandline", "")
+                    writeln_indented(Padding(Syntax(commandline, "bash"), pad=(0, 0, 0, 4)))
+                else:
+                    writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
+            writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
+
 last_events = []
 last_model_name = ""
 
@@ -212,77 +287,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *
 
         # * on_chain_stream
         if event_name == "on_chain_stream":
-            # trigger HITL approvals
-            #   use gptoss for one at a time
-            #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
-            # Interrupt(
-            #     value={
-            #         'action_requests': [
-            #             {
-            #                 'name': 'run_command',
-            #                 'args': {'commandline': 'hostname'},
-            #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
-            # {'commandline': 'hostname'}"
-            #             },
-            #             {
-            #                 'name': 'run_command',
-            #                 'args': {'commandline': 'date'},
-            #                 'description': "Tool execution pending approval\n\nTool: run_command\nArgs:
-            # {'commandline': 'date'}"
-            #             }
-            #         ],
-            #         'review_configs': [
-            #             {
-            #                 'action_name': 'run_command',
-            #                 'allowed_decisions': ['approve', 'edit', 'reject']
-            #             },
-            #             {
-            #                 'action_name': 'run_command',
-            #                 'allowed_decisions': ['approve', 'edit', 'reject']
-            #             }
-            #         ]
-            #     },
-            #     id='8784b505500ed4b71d24ba3105d43dfc'
-            # )
-            chunk = data.get("chunk")
-            if not chunk:
-                continue
-            if not isinstance(chunk, dict):
-                continue
-            __interrupt__ = chunk.get("__interrupt__")
-            if not __interrupt__:
-                continue
-            for interrupt in __interrupt__:
-                writeln()
-                writeln("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
-                # console.print(interrupt) # dump interrupt object (like above)
-                actions = interrupt.value.get("action_requests", [])
-                review_configs = interrupt.value.get("review_configs", [])
-                assert len(actions) == len(review_configs)
-                # actions and review configs correspond
-                for idx, (request, config) in enumerate(zip(actions, review_configs), start=1):
-                    #
-                    description = request.get('description')  # description usually is just prefix + tool name + args
-                    name = request.get('name')
-                    args = request.get('args', {})
-                    #
-                    action_name = config.get('action_name')
-                    allowed = ', '.join(config.get('allowed_decisions', []))
-                    description = description.replace("\n", "\n    ")
-                    # FYI description can be customized per tool, else just has tool name + args pre-expanded into a prompt format (so you can just build it yourself in most cases unless you want a tool's description customization)
-                    # writeln_indented(f"{idx}. {description}", markup=False) # use generic description
-                    writeln()
-                    writeln_indented(f"{idx}. [bold]{name}[/]")
-                    if args:
-                        if name.startswith("run_python"):
-                            code = args.get("code", "")
-                            writeln_indented(Padding(Syntax(code, "python"), pad=(0, 0, 0, 4)))
-                        elif name.startswith("run_command"):
-                            commandline = args.get("commandline", "")
-                            writeln_indented(Padding(Syntax(commandline, "bash"), pad=(0, 0, 0, 4)))
-                        else:
-                            writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
-                    writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
+            show_pending_approvals(data)
 
         # * on_tool_start
         if event_name == "on_tool_start":
