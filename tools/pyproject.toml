@@ -3,6 +3,8 @@ name = "tools"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+ "deepagents>=0.5.3",
+ "grandalf>=0.8",
  "ipykernel>=7.2.0",
  "langchain>=1.2.15",
  "langchain-anthropic>=1.4.0",
