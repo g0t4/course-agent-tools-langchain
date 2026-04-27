@@ -178,7 +178,7 @@ def show_pending_approvals(data):
 last_events = []
 last_model_name = ""
 
-async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *, config: RunnableConfig | None = None, **kwargs):
+async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
     global last_model_name
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
@@ -259,6 +259,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *
         for msg in input["messages"]:
             message_index += 1
             _show_message(msg)
+    elif input is None:
+        pass
     else:
         # convenience to wrap in messages dict
         clear_screen()  # think Ctrl+L => so chat starts at top and grows downward

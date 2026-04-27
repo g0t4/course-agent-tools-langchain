@@ -13,6 +13,7 @@ def run_python(code: str):
     """ Execute a python script and return STDOUT
         FYI you can use subprocess to run system commmands too!
     """
+    # raise NotImplementedError()
     import io
     import contextlib
     import traceback
