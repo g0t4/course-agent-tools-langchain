@@ -45,6 +45,8 @@ messages = [
     # HumanMessage("Read show.py and investigate how I display the tool call ID value... add a function to shorten the ID to a max of first 6 chars and use that to show the ID"),
 ]
 
+# FYI checkpointers: https://pypi.org/search/?q=langgraph-checkpoint
+# import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres/store";
 checkpointer = InMemorySaver()
 agent = create_agent(
     model=model,
