@@ -12,7 +12,7 @@ import show # for show.last_events
 from show import stream_messages
 
 model = ChatLlamaServer(
-    base_url="http://paxy:8013",
+    base_url="http://paxy:8012",
     api_key="",
     # Qwen3.6 via llama-server
     # extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
@@ -30,3 +30,7 @@ agent = create_agent(model, tools=tools)
 
 config = {"recursion_limit": 50}
 events = await stream_messages(agent, messages, config=config) # pyright: ignore
+
+# FYI:
+#  pbpaste | string replace --regex "[^{]*" "" | jq .tools[2].function.description --raw-output
+#  TODO? add extended description where I cover more examples in my ask-openai.nvim repo?
