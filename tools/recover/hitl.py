@@ -3,6 +3,7 @@ get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
 get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
 from typing import Type
+from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 import rich
@@ -67,7 +68,11 @@ import show
 # show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
 from show import stream_messages
 
-config = {"configurable": {"thread_id": "generate_a_thread_id_fawse234awe"}}
+config: RunnableConfig = {
+    "configurable": {
+        "thread_id": "generate_a_thread_id_fawse234awe"
+    },
+}
 # persist thread so we can resume with with the user's decision
 
 def dump_checkpoints():
@@ -79,7 +84,7 @@ dump_checkpoints()
 
 events = await stream_messages(agent, messages, config=config) # pyright: ignore
 
-# %% 
+# %%
 
 events = await stream_messages(agent,
     Command(resume={"decisions": [
@@ -108,7 +113,7 @@ events = await stream_messages(agent,
 
 
 
-# %% 
+# %%
 
 
 
@@ -124,7 +129,7 @@ checkpointer.get_tuple(config) == [c for c in checkpointer.list(config)][0] # TR
 # rich.print([h for h in agent.get_state_history(config)])
 agent.get_state(config) == [h for h in agent.get_state_history(config)][0]  # TRUE
 #
-# checkpoints are largely to preserve list of messages (w.r.t. agent graphs) 
+# checkpoints are largely to preserve list of messages (w.r.t. agent graphs)
 #  you could also just pass the messages list every time and manage it yourself, basically achieve same thing
 #  but this is builtin so you don't have to
 #  and makes it possible to resume after interrupt for approvals (HITL)

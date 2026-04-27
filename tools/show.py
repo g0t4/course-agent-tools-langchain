@@ -8,7 +8,7 @@ import sys
 import asyncio
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.schema import StreamEvent
 
 console = rich.console.Console()
@@ -169,7 +169,7 @@ def show_pending_approvals(data):
 last_events = []
 last_model_name = ""
 
-async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, **kwargs):
+async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *, config: RunnableConfig | None = None, **kwargs):
     global last_model_name
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
@@ -266,7 +266,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *
     event: StreamEvent
 
     # make explicit I designed around "v2"
-    async for event in agent.astream_events(input, version="v2", **kwargs):
+    async for event in agent.astream_events(input, version="v2", config=config, **kwargs):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
