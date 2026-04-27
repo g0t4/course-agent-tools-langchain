@@ -63,13 +63,19 @@ agent = create_agent(
     checkpointer=checkpointer,
 )
 
-
 import show
 # show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
 from show import stream_messages
 
 config = {"configurable": {"thread_id": "generate_a_thread_id_fawse234awe"}}
 # persist thread so we can resume with with the user's decision
+
+def dump_checkpoints():
+    for what in checkpointer.list(config):
+        rich.print(what)
+dump_checkpoints()
+
+# %%
 
 events = await stream_messages(agent, messages, config=config) # pyright: ignore
 
@@ -95,3 +101,55 @@ events = await stream_messages(agent,
     ]}),
     config=config,
 )  # pyright: ignore
+
+
+
+
+
+
+
+# %% 
+
+
+
+
+# dump_checkpoints()
+#
+# # "current" vs "history":
+# checkpointer.get_tuple(config)
+checkpointer.get_tuple(config) == [c for c in checkpointer.list(config)][0] # TRUE
+#
+#
+# # "current" vs "history"
+# rich.print([h for h in agent.get_state_history(config)])
+agent.get_state(config) == [h for h in agent.get_state_history(config)][0]  # TRUE
+#
+# checkpoints are largely to preserve list of messages (w.r.t. agent graphs) 
+#  you could also just pass the messages list every time and manage it yourself, basically achieve same thing
+#  but this is builtin so you don't have to
+#  and makes it possible to resume after interrupt for approvals (HITL)
+#
+#
+# # compare "current":
+# rich.print(agent.get_state(config))
+# checkpointer.get_tuple(config)
+#
+# # compare "history":
+# rich.print([c for c in checkpointer.list(config)])
+# rich.print([h for h in agent.get_state_history(config)])
+#
+# # can show "graph" of nodes that checkpointer operates on:
+# # re-run w/ and w/o the HITL middleware and compare diff (separate tabs)
+# rich.print(agent.get_graph())
+#
+# rich.print([sub for sub in agent.get_subgraphs()])  # fodder for later in course
+#
+# docs graph v checkpoint APIs: https://docs.langchain.com/oss/python/langgraph/add-memory#checkpointer-api
+#
+#
+# BTW store vs state... good examples of memory via stores:
+# - https://docs.langchain.com/oss/python/langgraph/persistence#super-steps
+# - InMemoryStore
+# from langgraph.store.memory import InMemoryStore
+# store = InMemoryStore()
+# agent  = create_agent (..., store = store)
