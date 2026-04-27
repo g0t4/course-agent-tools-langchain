@@ -25,16 +25,22 @@ def show_messages(messages):
             if m.tool_calls:
                 for call in m.tool_calls:
                     console.print(f'[bold deep_sky_blue3]Tool call[/]', end="")
-                    print(": " + call["name"], end="")
-                    if call["name"] == "run_python":
+                    name = call["name"]
+                    print(": " + name, end="")
+                    if name == "run_python":
                         print()
                         code = call["args"]["code"]
                         syntax = Syntax(code, "python", theme="monokai")
                         console.print(Padding(syntax, pad=(0, 0, 0, 4)))
-                    elif call["name"] == "run_command":
+                    elif name == "run_command":
                         print()
                         code = call["args"]["commandline"]
                         syntax = Syntax(code, "bash", theme="monokai")
+                        console.print(Padding(syntax, pad=(0, 0, 0, 4)))
+                    elif name == "apply_patch":
+                        print()
+                        patch = call["args"]["patch"]
+                        syntax = Syntax(call["args"]["patch"], "diff", theme="monokai")
                         console.print(Padding(syntax, pad=(0, 0, 0, 4)))
                     else:
                         print(f'({call["args"]})')
@@ -162,6 +168,9 @@ def show_pending_approvals(data):
                 elif name.startswith("run_command"):
                     commandline = args.get("commandline", "")
                     writeln_indented(Padding(Syntax(commandline, "bash"), pad=(0, 0, 0, 4)))
+                elif name == "apply_patch":
+                    patch = args.get("patch", "")
+                    writeln_indented(Padding(Syntax(patch, "diff"), pad=(0, 0, 0, 4)))
                 else:
                     writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
             writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
@@ -303,6 +312,10 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command, *
             elif tool_name.startswith("run_command"):
                 commandline = args.get("commandline", "")
                 writeln_indented(Syntax(commandline, "bash"))
+                writeln()
+            elif tool_name == "apply_patch":
+                patch = args.get("patch", "")
+                writeln_indented(Syntax(patch, "diff"))
                 writeln()
             # else: FYI no reason to dump JSON again
 
