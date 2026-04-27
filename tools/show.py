@@ -1,4 +1,3 @@
-from langgraph.types import Command
 import rich
 from rich.console import RenderableType
 from rich.syntax import Syntax
@@ -10,6 +9,8 @@ import asyncio
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.schema import StreamEvent
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
 
 console = rich.console.Console()
 
@@ -430,3 +431,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
     # if last_model_name:
     #     writeln(f"    [dim italic]last model used: {last_model_name}[/]")
     return events
+
+def show_tools(agent: CompiledStateGraph):
+    tools_node = agent.nodes["tools"]
+    tools = tools_node.bound.tools_by_name
+    rich.inspect(tools)
