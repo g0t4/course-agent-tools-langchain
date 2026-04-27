@@ -88,20 +88,20 @@ events = await stream_messages(agent, messages, config=config) # pyright: ignore
 
 events = await stream_messages(agent,
     Command(resume={"decisions": [
-        # { "type": "approve" },
-        # { "type": "reject" },
-
-        # choose to edit run_command (note on_tool_start shows this new tool call instead)
-        {
-            "type": "edit",
-            "edited_action": {
-                "name": "run_command",
-                "args": {
-                    "commandline": "ls .",
-                },
-            }
-        },
+        { "type": "reject" },
         { "type": "approve" },
+
+        # # choose to edit run_command (note on_tool_start shows this new tool call instead)
+        # {
+        #     "type": "edit",
+        #     "edited_action": {
+        #         "name": "run_command",
+        #         "args": {
+        #             "commandline": "ls .",
+        #         },
+        #     }
+        # },
+        # { "type": "approve" },
 
     ]}),
     config=config,
