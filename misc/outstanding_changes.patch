@@ -1,0 +1,31 @@
+diff --git a/langchain_mcp_adapters/tools.py b/langchain_mcp_adapters/tools.py
+index 846e87e..986f015 100644
+--- a/langchain_mcp_adapters/tools.py
++++ b/langchain_mcp_adapters/tools.py
+@@ -177,16 +177,16 @@ def _convert_call_tool_result(
+         for content in call_tool_result.content
+     ]
+ 
+-    if call_tool_result.isError:
+-        # Join text from all blocks
+-        error_parts = []
+-        for item in tool_content:
+-            if isinstance(item, str):
+-                error_parts.append(item)
+-            elif isinstance(item, dict) and item.get("type") == "text":
+-                error_parts.append(item.get("text", ""))
+-        error_msg = "\n".join(error_parts) if error_parts else str(tool_content)
+-        raise ToolException(error_msg)
++    # if call_tool_result.isError:
++    #     # Join text from all blocks
++    #     error_parts = []
++    #     for item in tool_content:
++    #         if isinstance(item, str):
++    #             error_parts.append(item)
++    #         elif isinstance(item, dict) and item.get("type") == "text":
++    #             error_parts.append(item.get("text", ""))
++    #     error_msg = "\n".join(error_parts) if error_parts else str(tool_content)
++    #     raise ToolException(error_msg)
+ 
+     # Extract structured content and wrap in MCPToolArtifact
+     artifact: MCPToolArtifact | None = None
