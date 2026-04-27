@@ -64,10 +64,6 @@ agent = create_agent(
     checkpointer=checkpointer,
 )
 
-import show
-# show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
-from show import stream_messages
-
 config: RunnableConfig = {
     "configurable": {
         "thread_id": "generate_a_thread_id_fawse234awe"
@@ -81,6 +77,10 @@ def dump_checkpoints():
 dump_checkpoints()
 
 # %%
+
+import show
+# show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
+from show import stream_messages
 
 events = await stream_messages(agent, messages, config=config) # pyright: ignore
 
