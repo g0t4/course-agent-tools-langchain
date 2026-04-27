@@ -24,7 +24,11 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    HumanMessage("Run two commands one at a time, run the first and get the result before the second: run_command(hostname) and run_python(add code to get timestamp)"),
+    # HumanMessage("Run two commands one at a time, run the first and get the result before the second: run_command(hostname) and run_python(add code to get timestamp)"),
+    HumanMessage("""Run two commands one at a time, run the first and get the result before the second:
+                 hostname
+                 date
+                 """),
 ]
 
 from deepagents import create_deep_agent
@@ -33,7 +37,7 @@ checkpointer = InMemorySaver()
 agent = create_deep_agent(
     checkpointer=checkpointer,
     model=model,
-    tools=[run_python, run_command],
+    # tools=[run_python, run_command],
     system_prompt="Follow the user request exactly as written and do not reinterpret or optimize it.",
 )
 
