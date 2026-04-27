@@ -432,7 +432,10 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
     #     writeln(f"    [dim italic]last model used: {last_model_name}[/]")
     return events
 
-def show_tools(agent: CompiledStateGraph):
+def get_tools(agent: CompiledStateGraph):
     tools_node = agent.nodes["tools"]
-    tools = tools_node.bound.tools_by_name
+    return tools_node.bound.tools_by_name
+
+def show_tools(agent: CompiledStateGraph):
+    tools = get_tools(agent)
     rich.inspect(tools)
