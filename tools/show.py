@@ -318,7 +318,8 @@ async def stream_messages(
 
         clear_screen()
         initial_messages = input
-        # convenience to wrap in messages dict
+        # convenience to wrap in messages dict... b/c that's what astream_events/invoke/etc expects
+        # I added this so you can pass initial_messages instead of always wrapping it
         input = {"messages": initial_messages}
         for tool_message in initial_messages:
             increment_message_count()
