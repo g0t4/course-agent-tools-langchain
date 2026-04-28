@@ -177,10 +177,8 @@ def show_pending_approvals(data):
             writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
 
 last_events = []
-last_model_name = ""
 
 async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
-    global last_model_name
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
     #  thus, if there's a probelm showing something, log a warning and continue
@@ -340,12 +338,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
 
-            # * show model name
-            message = data.get("output")
-            last_model_name = message.response_metadata.get("model_name")
-            # if last_model_name:
-            #      writeln(f"    [dim italic]model: {last_model_name}[/]")
-
             # # dump to test show_ai_message (otherwise only used for initial messages)
             # if isinstance(message, AIMessage):
             #     show_ai_message(message)
@@ -436,8 +428,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
                     ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
                 await asyncio.sleep(ms)
 
-    # if last_model_name:
-    #     writeln(f"    [dim italic]last model used: {last_model_name}[/]")
     return events
 
 def get_tools(agent: CompiledStateGraph):
