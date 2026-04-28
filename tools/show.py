@@ -250,7 +250,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             console.print(message, markup=False)
         writeln()  # just like on_chat_model_end for non-initial messages
 
-    if event_name == "on_tool_start":
+    def on_tool_start(event):
         # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
         #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
         #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
@@ -258,6 +258,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         # AFAICT there is no tool_call_id available on start event
         writeln_indented(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
 
+        data = event.get("data")
         args = data.get("input")
         assert isinstance(args, dict)
         if tool_name.startswith("run_python"):
@@ -273,8 +274,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             writeln_indented(Syntax(patch, "diff"))
             writeln()
         # else: FYI no reason to dump JSON again
-
-
 
     if isinstance(input, Command):
         # command => ok as is
@@ -323,9 +322,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         if event_name == "on_chain_stream":
             show_pending_approvals(data)
 
-        # * on_tool_start
         if event_name == "on_tool_start":
-            on_tool_start(data, event)
+            on_tool_start(event)
 
         if event_name == "on_tool_end":
             message_index += 1
