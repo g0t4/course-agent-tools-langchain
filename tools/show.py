@@ -237,7 +237,7 @@ async def stream_messages(
             reasoning_node.add(BLANK_LINE)
         if message.content:
             content_node = child.add("[bold]content:[/]")
-            content_node.add(no_markup(content))
+            content_node.add(no_markup(message.content))
             content_node.add(BLANK_LINE)
         if message.tool_calls:
             for call in message.tool_calls:

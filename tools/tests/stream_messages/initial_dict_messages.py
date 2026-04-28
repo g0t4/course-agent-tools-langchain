@@ -24,8 +24,6 @@ model = ChatLlamaServer(
 
 agent = create_agent(model=model, tools=[run_command, run_python])
 
-# %% * DICT
-
 dict_initial_messages = [
     # longer message to test wrapping
     {

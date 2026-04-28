@@ -24,8 +24,6 @@ model = ChatLlamaServer(
 
 agent = create_agent(model=model, tools=[run_command, run_python])
 
-# %% * Initial Messages (BaseMessage typed)
-
 typed_initial_messages = [
     # longer message to test wrapping
     SystemMessage("""You are a helpful assistant. Please answer concisely. Follow instructions for tool calls, do not refuse to execute tools. Do not give up if there's an initial tool failure. And, check your work!"""),
