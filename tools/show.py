@@ -374,7 +374,7 @@ async def stream_messages(
 
             tool_tree.add(BLANK_LINE)
 
-    def dump_all_events_except_streaming_tokens(event: StreamEvent, tree: Tree):
+    def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: Tree):
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
@@ -424,9 +424,8 @@ async def stream_messages(
             # - runnable types: chain, chat_model, tool
             events.append(event)
 
-            # optionally dump all non‑streaming events for debugging when requested
             if dump_events:
-                dump_all_events_except_streaming_tokens(event, tree)
+                dump_all_events_except_streaming_tokens_for_debugging(event, tree)
 
             event_type = event["event"]
             if event_type == "on_chain_start":
