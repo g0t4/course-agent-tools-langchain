@@ -159,7 +159,7 @@ def show_pending_approvals(event: StreamEvent, tree: Tree):
 
     for interrupt in __interrupt__:
         node = tree.add("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
-        node.add(BLANK_LINE)
+        blank_line(node)
         # node.add(Pretty(interrupt)) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
         review_configs = interrupt.value.get("review_configs", [])
@@ -186,7 +186,7 @@ def show_pending_approvals(event: StreamEvent, tree: Tree):
                 else:
                     approval_node.add(Pretty(args))
             approval_node.add(f"[italic]{allowed}[/]")
-            approval_node.add(BLANK_LINE)
+            blank_line(approval_node)
 
 @dataclass
 class StreamingChunksState:
@@ -198,13 +198,33 @@ class StreamingChunksState:
         self.node = None
         self.accumulated = None
 
-BLANK_LINE = ""
+def blank_line(tree: Tree) -> None:
+    """Add a blank line to *tree* only if the previous node does not already end with a newline.
+    This is an IMPERFECT approach as you'd have to check multiple tree levels for last node because you could add a \n anywhere, nonetheless this should be largely sufficient
+    """
+    BLANK_LINE = ""
+
+    # TODO walk up the parents to find last child of all levels? the one that literally comes last?
+    if not tree.children:
+        tree.add(BLANK_LINE)
+        return
+
+    last = tree.children[-1]
+    label = last.label
+    # Rich Text objects store the plain text in .plain
+    if isinstance(label, Text):
+        ends_newline = label.plain.endswith("\n")
+    else:
+        ends_newline = isinstance(label, str) and label.endswith("\n")
+    # PRN handle any other RenderableTypes here
+    if not ends_newline:
+        tree.add(BLANK_LINE)
 
 async def stream_messages(
     agent: Runnable,
     input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
     *,
-    dump_events = False,
+    dump_events=False,
     config: RunnableConfig | None = None,
     **kwargs,
 ):
@@ -221,17 +241,17 @@ async def stream_messages(
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message, child)
-        child.add(BLANK_LINE)
+        blank_line(child)
 
     def show_system_message(message: SystemMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add(no_markup(message.content))
-        child.add(BLANK_LINE)
+        blank_line(child)
 
     def show_human_message(message: HumanMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         child.add(no_markup(message.content))
-        child.add(BLANK_LINE)
+        blank_line(child)
 
     def show_ai_message(message: AIMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
@@ -239,11 +259,11 @@ async def stream_messages(
         if reasoning:
             reasoning_node = child.add("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
-            reasoning_node.add(BLANK_LINE)
+            blank_line(reasoning_node)
         if message.content:
             content_node = child.add("[bold]content:[/]")
             content_node.add(no_markup(message.content))
-            content_node.add(BLANK_LINE)
+            blank_line(content_node)
         if message.tool_calls:
             for call in message.tool_calls:
                 # TODO? reuse? with streaming logic
@@ -253,7 +273,7 @@ async def stream_messages(
                 args = call.get("args", "")
                 if args:
                     tool_tree.add(Pretty(args))
-                tool_tree.add(BLANK_LINE)
+                blank_line(tool_tree)
 
     def _dict_to_message(message: dict) -> BaseMessage:
         # FYI supported "role" strings: 'human', 'user', 'ai', 'assistant', 'function', 'tool', 'system', or 'developer'
@@ -285,7 +305,7 @@ async def stream_messages(
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
             branch = tree.add(f"[red]Unsupported message type: {type(message).__name__}[/]")
             branch.add(Pretty(message))
-            branch.add(BLANK_LINE)
+            blank_line(branch)
 
     def on_tool_start(event: StreamEvent, tree: Tree):
         # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
@@ -308,7 +328,7 @@ async def stream_messages(
             patch = args.get("patch", "")
             node.add(Syntax(patch, "diff"))
         # else: FYI no reason to dump JSON again
-        node.add(BLANK_LINE)
+        blank_line(node)
 
     def on_tool_end(event: StreamEvent, tree: Tree):
         increment_message_count()
@@ -355,14 +375,14 @@ async def stream_messages(
         if reasoning:
             reasoning_node = node.add("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))
-            reasoning_node.add(BLANK_LINE)
+            blank_line(reasoning_node)
 
         # * model's content
         content: str = message.content  # w/o content_blocks
         if content:
             content_node = node.add("[bold]content:[/]")
             content_node.add(no_markup(content))
-            content_node.add(BLANK_LINE)
+            blank_line(content_node)
 
         # * model's tool call request
         calls = message.tool_calls  # w/o content_blocks
@@ -377,7 +397,7 @@ async def stream_messages(
                 # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
                 #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
 
-            tool_tree.add(BLANK_LINE)
+            blank_line(tool_tree)
 
     def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: Tree):
         event_type = event["event"]
