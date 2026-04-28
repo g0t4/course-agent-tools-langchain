@@ -287,6 +287,10 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             # i.e. update files modified (tmp file creation by subagent)
             rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
 
+    def dump_all_events_except_streaming_tokens():
+        if event_name not in {"on_chat_model_stream"}:
+            console.print(event, markup=False)
+
     if isinstance(input, Command):
         # command => ok as is
         pass
@@ -320,10 +324,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         event_name = event["event"]
         data = event['data']
 
-        # # * dump all events except streaming tokens (too many)
-        # if event_name not in {"on_chat_model_stream"}:
-        #     console.print(event, markup=False)
-        # # continue
+        dump_all_events_except_streaming_tokens()
+        # continue
 
         if event_name == "on_chain_stream":
             show_pending_approvals(data)
