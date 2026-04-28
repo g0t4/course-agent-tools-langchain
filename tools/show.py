@@ -325,9 +325,14 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         if event_name == "on_tool_end":
             message_index += 1
             # * show ToolMessage
-            tool_message = data.get("output")
-            assert isinstance(tool_message, ToolMessage)
-            _show_message(tool_message)
+            output = data.get("output")
+            if isinstance(output, ToolMessage):
+                _show_message(output)
+            else:
+                # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
+                # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
+                # i.e. update files modified (tmp file creation by subagent)
+                rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
 
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
