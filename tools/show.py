@@ -62,9 +62,14 @@ def show_messages(messages):
             console.print(f"unexpected message type: {m}")
 
 def clear_screen():
-    from IPython import get_ipython
-    # optional, clear screen first:
-    get_ipython().run_line_magic("clear", "")
+    try:
+        from IPython import get_ipython
+        ip = get_ipython()
+        if ip:
+            ip.run_line_magic("clear", "")
+    except Exception:
+        # Silently ignore if IPython is not available or any error occurs.
+        pass
 
 def no_markup(text):
     """ 
