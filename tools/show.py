@@ -300,8 +300,9 @@ async def stream_messages(
 
     def dump_all_events_except_streaming_tokens(event):
         event_type = event["event"]
-        if event_type not in {"on_chat_model_stream"}:
-            console.print(event, markup=False)
+        if event_type in {"on_chat_model_stream"}:
+            return
+        console.print(event, markup=False)
 
     def show_input_messages():
         nonlocal input
