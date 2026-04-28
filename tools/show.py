@@ -305,8 +305,9 @@ async def stream_messages(
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
-            pass
-        elif isinstance(input, dict) and "messages" in input:
+            return
+
+        if isinstance(input, dict) and "messages" in input:
             # FYI I am not using this, just added this in case
             # someone passes { "messages": ... } like you would to astream_events
             # don't double wrap in that case
