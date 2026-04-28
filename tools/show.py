@@ -336,7 +336,6 @@ async def stream_messages(
         # - runnable types: chain, chat_model, tool
         events.append(event)
         event_name = event["event"]
-        data = event['data']
 
         # dump_all_events_except_streaming_tokens()
         # # continue
@@ -356,6 +355,7 @@ async def stream_messages(
         elif event_name == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
             state.chunk_count += 1
+            data = event.get("data")
             chunk = data.get("chunk")
             assert isinstance(chunk, AIMessageChunk)
 
