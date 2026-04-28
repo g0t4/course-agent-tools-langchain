@@ -275,6 +275,19 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             writeln()
         # else: FYI no reason to dump JSON again
 
+    def on_tool_end(event):
+        nonlocal message_index
+        message_index += 1
+        data = event.get("data")
+        output = data.get("output")
+        if isinstance(output, ToolMessage):
+            _show_message(output)
+        else:
+            # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
+            # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
+            # i.e. update files modified (tmp file creation by subagent)
+            rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
+
     if isinstance(input, Command):
         # command => ok as is
         pass
@@ -326,16 +339,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             on_tool_start(event)
 
         if event_name == "on_tool_end":
-            message_index += 1
-            # * show ToolMessage
-            output = data.get("output")
-            if isinstance(output, ToolMessage):
-                _show_message(output)
-            else:
-                # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
-                # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
-                # i.e. update files modified (tmp file creation by subagent)
-                rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
+            on_tool_end(event)
 
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
