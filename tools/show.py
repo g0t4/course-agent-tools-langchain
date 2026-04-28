@@ -199,6 +199,7 @@ async def stream_messages(
     agent: Runnable,
     input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
     *,
+    dump_events = False,
     config: RunnableConfig | None = None,
     **kwargs,
 ):
@@ -423,8 +424,9 @@ async def stream_messages(
             # - runnable types: chain, chat_model, tool
             events.append(event)
 
-            # dump_all_events_except_streaming_tokens(event, tree)  # TODO nesting with rest? should align
-            # # continue
+            # optionally dump all non‑streaming events for debugging when requested
+            if dump_events:
+                dump_all_events_except_streaming_tokens(event, tree)
 
             event_type = event["event"]
             if event_type == "on_chain_start":
