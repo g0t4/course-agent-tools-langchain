@@ -324,8 +324,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         event_name = event["event"]
         data = event['data']
 
-        dump_all_events_except_streaming_tokens()
-        # continue
+        # dump_all_events_except_streaming_tokens()
+        # # continue
 
         if event_name == "on_chain_stream":
             show_pending_approvals(data)
