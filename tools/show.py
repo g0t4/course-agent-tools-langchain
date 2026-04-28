@@ -2,6 +2,9 @@ import rich
 from rich.console import RenderableType
 from rich.syntax import Syntax
 from rich.padding import Padding
+from rich.live import Live
+from rich.tree import Tree
+
 import json
 import sys
 import asyncio
@@ -200,6 +203,7 @@ async def stream_messages(
     config: RunnableConfig | None = None,
     **kwargs,
 ):
+    tree = Tree("agent", hide_root=True)
 
     indent2_spaces = " " * 8
     message_index = 0
