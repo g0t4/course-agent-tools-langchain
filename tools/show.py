@@ -104,7 +104,7 @@ def write(msg: RenderableType, *args, **kwargs):
     console.print(msg, end="", *args, **kwargs)
     sys.stdout.flush()
 
-def show_pending_approvals(data):
+def show_pending_approvals(event):
     # trigger HITL approvals
     #   use gptoss for one at a time
     #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
@@ -137,6 +137,7 @@ def show_pending_approvals(data):
     #     },
     #     id='8784b505500ed4b71d24ba3105d43dfc'
     # )
+    data = event.get("data")
     chunk = data.get("chunk")
     if not chunk:
         return
@@ -341,7 +342,7 @@ async def stream_messages(
         # # continue
 
         if event_name == "on_chain_stream":
-            show_pending_approvals(data)
+            show_pending_approvals(event)
         elif event_name == "on_tool_start":
             on_tool_start(event)
         elif event_name == "on_tool_end":
