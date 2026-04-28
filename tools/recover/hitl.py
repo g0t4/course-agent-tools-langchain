@@ -105,6 +105,6 @@ events = await stream_messages(agent,
 
     ]}),
     config=config,
-    dump_events=True,
+    # dump_events=True,
 )  # pyright: ignore
 
