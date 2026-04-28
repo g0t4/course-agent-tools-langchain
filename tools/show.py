@@ -301,8 +301,7 @@ async def stream_messages(
     def on_chat_model_stream(event):
         # streaming chunks so we can see response as it is generated
         state.chunk_count += 1
-        data = event.get("data")
-        chunk = data.get("chunk")
+        chunk = event.get("data").get("chunk")
         assert isinstance(chunk, AIMessageChunk)
 
         if not state.ai_started:
@@ -314,7 +313,7 @@ async def stream_messages(
         #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
         #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
         if not any(chunk.content_blocks):
-            continue
+            return
 
         block = chunk.content_blocks[0]
         # ? what if len(chunk.content) > 1
