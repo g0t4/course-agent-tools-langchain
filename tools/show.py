@@ -194,7 +194,7 @@ class StreamingChunksState:
 
 async def stream_messages(
     agent: Runnable,
-    input: Any | list[BaseMessage] | Command | None, # Any: for {"messages": list[BaseMessage] }
+    input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
     *,
     config: RunnableConfig | None = None,
     **kwargs,
@@ -202,6 +202,10 @@ async def stream_messages(
 
     indent2_spaces = " " * 8
     message_index = 0
+
+    def increment_message_count():
+        nonlocal message_index
+        message_index += 1
 
     def show_tool_message(message: ToolMessage):
         name = message.name
@@ -282,8 +286,7 @@ async def stream_messages(
         # else: FYI no reason to dump JSON again
 
     def on_tool_end(event):
-        nonlocal message_index
-        message_index += 1
+        increment_message_count()
         data = event.get("data")
         output = data.get("output")
         if isinstance(output, ToolMessage):
@@ -299,7 +302,7 @@ async def stream_messages(
             console.print(event, markup=False)
 
     def show_input_messages():
-        nonlocal message_index, input
+        nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
             pass
@@ -308,7 +311,7 @@ async def stream_messages(
             # someone passes { "messages": ... } like you would to astream_events
             # don't double wrap in that case
             for msg in input.get("messages", {}):
-                message_index += 1
+                increment_message_count()
                 _show_message(msg)
         else:
             clear_screen()
@@ -316,7 +319,7 @@ async def stream_messages(
             # convenience to wrap in messages dict
             input = {"messages": initial_messages}
             for tool_message in initial_messages:
-                message_index += 1
+                increment_message_count()
                 _show_message(tool_message)
 
     show_input_messages()
@@ -353,7 +356,7 @@ async def stream_messages(
             assert isinstance(chunk, AIMessageChunk)
 
             if not state.ai_started:
-                message_index += 1
+                increment_message_count()
                 state.ai_started = True
                 writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
 
