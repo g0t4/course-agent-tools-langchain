@@ -6,6 +6,7 @@ import json
 import sys
 import asyncio
 from dataclasses import dataclass
+from typing import Any, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -191,7 +192,13 @@ class StreamingChunksState:
         self.ai_has_content = False
         self.chunk_count = 0
 
-async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
+async def stream_messages(
+    agent: Runnable,
+    input: Any | list[BaseMessage] | Command | None, # Any: for {"messages": list[BaseMessage] }
+    *,
+    config: RunnableConfig | None = None,
+    **kwargs,
+):
 
     indent2_spaces = " " * 8
     message_index = 0
@@ -291,25 +298,28 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         if event_name not in {"on_chat_model_stream"}:
             console.print(event, markup=False)
 
-    if isinstance(input, Command) or input is None:
-        # don't show command inputs, that's already obvious in the calling code
-        pass
-    elif isinstance(input, dict) and "messages" in input:
-        # FYI I am not using this, just added this in case
-        # someone passes { "messages": ... } like you would to astream_events
-        # don't double wrap in that case
-        for msg in input.get("messages", {}):
-            message_index += 1
-            _show_message(msg)
-    else:
-        clear_screen()
-        initial_messages = input
-        # convenience to wrap in messages dict
-        input = {"messages": initial_messages}
-        for tool_message in initial_messages:
-            message_index += 1
-            _show_message(tool_message)
+    def show_input_messages():
+        nonlocal message_index, input
+        if isinstance(input, Command) or input is None:
+            # don't show command inputs, that's already obvious in the calling code
+            pass
+        elif isinstance(input, dict) and "messages" in input:
+            # FYI I am not using this, just added this in case
+            # someone passes { "messages": ... } like you would to astream_events
+            # don't double wrap in that case
+            for msg in input.get("messages", {}):
+                message_index += 1
+                _show_message(msg)
+        else:
+            clear_screen()
+            initial_messages = input
+            # convenience to wrap in messages dict
+            input = {"messages": initial_messages}
+            for tool_message in initial_messages:
+                message_index += 1
+                _show_message(tool_message)
 
+    show_input_messages()
     events: list[StreamEvent] = []
     state = StreamingChunksState()
     event: StreamEvent
