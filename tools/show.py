@@ -302,11 +302,10 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             message_index += 1
             _show_message(msg)
     else:
-        # convenience to wrap in messages dict
-        clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
+        clear_screen()
         initial_messages = input
+        # convenience to wrap in messages dict
         input = {"messages": initial_messages}
-        # * show initial messages
         for tool_message in initial_messages:
             message_index += 1
             _show_message(tool_message)
