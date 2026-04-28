@@ -331,16 +331,12 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         #     console.print(event, markup=False)
         # # continue
 
-        # * on_chain_stream
         if event_name == "on_chain_stream":
             show_pending_approvals(data)
-
-        if event_name == "on_tool_start":
+        elif event_name == "on_tool_start":
             on_tool_start(event)
-
-        if event_name == "on_tool_end":
+        elif event_name == "on_tool_end":
             on_tool_end(event)
-
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
 
