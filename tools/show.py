@@ -314,14 +314,15 @@ async def stream_messages(
             for msg in input.get("messages", {}):
                 increment_message_count()
                 _show_message(msg)
-        else:
-            clear_screen()
-            initial_messages = input
-            # convenience to wrap in messages dict
-            input = {"messages": initial_messages}
-            for tool_message in initial_messages:
-                increment_message_count()
-                _show_message(tool_message)
+            return
+
+        clear_screen()
+        initial_messages = input
+        # convenience to wrap in messages dict
+        input = {"messages": initial_messages}
+        for tool_message in initial_messages:
+            increment_message_count()
+            _show_message(tool_message)
 
     show_input_messages()
     events: list[StreamEvent] = []
