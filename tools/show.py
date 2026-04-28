@@ -1,9 +1,13 @@
 import rich
 from rich.console import RenderableType
+from rich.style import Style
 from rich.syntax import Syntax
 from rich.padding import Padding
 from rich.live import Live
+from rich.text import Text
 from rich.tree import Tree
+from rich.pretty import Pretty
+from rich.markup import escape
 
 import json
 import sys
@@ -62,52 +66,49 @@ def clear_screen():
     # optional, clear screen first:
     get_ipython().run_line_magic("clear", "")
 
-def _display_tool_message_content(message: ToolMessage):
+def no_markup(text):
+    """ 
+    wrapper to make clear I don't want markup 
+    Text alone is not specific, ableit it works too
+    """
+    return Text(text)
+
+def _display_tool_message_content(message: ToolMessage, tree: Tree):
     content = message.content
     if message.name == "run_command":
-        _display_tool_message_for_run_command(message)
+        _display_tool_message_for_run_command(message, tree)
     # elif message.name == "run_python":
-    #    _display_tool_run_python(message)
+    #    _display_tool_run_python(message, tree)
     elif isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
-            writeln_indented("\n".join(lines[:5]) + "\n...", markup=False)
+            tree.add(no_markup("\n".join(lines[:5]) + "\n..."))
         else:
-            writeln_indented(content, markup=False)  # return all lines
+            tree.add(no_markup(content))
     else:
-        writeln_indented(json.dumps(content))
+        tree.add(Pretty(content))  # pretty spans multiple lines, is indented, looks very nice
 
-def _display_tool_message_for_run_command(message: ToolMessage):
+def _display_tool_message_for_run_command(message: ToolMessage, tree: Tree):
     content = message.content
     if not isinstance(content, str):
-        console.print('[red]run_command message.content should be a string, but is not... [/]')
-        writeln_indented(json.dumps(content), markup=False)
+        tree.add('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
+        tree.add(Pretty(content))
         return
 
     try:
         obj = json.loads(content)
     except json.JSONDecodeError:
-        console.print("[red]failed to load JSON result...[/]")
-        writeln_indented(content, markup=False)
+        # Show the error and raw content in the rich tree instead of the console
+        tree.add("[red]failed to load JSON result:[/]") \
+            .add(no_markup(content))
         return
 
-    for k, v in obj.items():
-        writeln_indented(f"[bold]{k}[/]:", markup=True)
-        writeln_indented(str(v), markup=False)  # PRN dump value as json depending on value?
+    for key, value in obj.items():
+        tree.add(f"[bold]{key}[/]:") \
+            .add(no_markup(str(value)))
+        # PRN dump value as json depending on value?
 
-def writeln_indented(msg: RenderableType, *args, **kwargs):
-    console.print(Padding(msg, (0, 0, 0, 4)), *args, **kwargs)
-    sys.stdout.flush()
-
-def writeln(msg: RenderableType = "", *args, **kwargs):
-    console.print(msg or "", *args, **kwargs)
-    sys.stdout.flush()
-
-def write(msg: RenderableType, *args, **kwargs):
-    console.print(msg, end="", *args, **kwargs)
-    sys.stdout.flush()
-
-def show_pending_approvals(event):
+def show_pending_approvals(event: StreamEvent, tree: Tree):
     # trigger HITL approvals
     #   use gptoss for one at a time
     #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
@@ -152,9 +153,9 @@ def show_pending_approvals(event):
         return
 
     for interrupt in __interrupt__:
-        writeln()
-        writeln("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
-        # console.print(interrupt) # dump interrupt object (like above)
+        node = tree.add("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
+        node.add(BLANK_LINE)
+        # node.add(Pretty(interrupt)) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
         review_configs = interrupt.value.get("review_configs", [])
         assert len(actions) == len(review_configs)
@@ -166,35 +167,33 @@ def show_pending_approvals(event):
             #
             action_name = config.get('action_name')
             allowed = ', '.join(config.get('allowed_decisions', []))
-            writeln()
-            writeln_indented(f"{idx}. [bold]{name}[/]")
+            approval_node = node.add(f"{idx}. [bold]{name}[/]")
             if args:
                 if name.startswith("run_python"):
                     code = args.get("code", "")
-                    writeln_indented(Padding(Syntax(code, "python"), pad=(0, 0, 0, 4)))
+                    approval_node.add(Syntax(code, "python"))
                 elif name.startswith("run_command"):
                     commandline = args.get("commandline", "")
-                    writeln_indented(Padding(Syntax(commandline, "bash"), pad=(0, 0, 0, 4)))
+                    approval_node.add(Syntax(commandline, "bash"))
                 elif name == "apply_patch":
                     patch = args.get("patch", "")
-                    writeln_indented(Padding(Syntax(patch, "diff"), pad=(0, 0, 0, 4)))
+                    approval_node.add(Syntax(patch, "diff"))
                 else:
-                    writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
-            writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
+                    approval_node.add(Pretty(args))
+            approval_node.add(f"[italic]{allowed}[/]")
+            approval_node.add(BLANK_LINE)
 
 @dataclass
 class StreamingChunksState:
-    ai_started: bool = False
-    ai_has_reasoning: bool = False
-    ai_has_content: bool = False
-    chunk_count: int = 0
+    node: Tree | None = None
+    accumulated: AIMessageChunk | None = None
 
     def reset(self):
         """reset state for a new model response"""
-        self.ai_started = False
-        self.ai_has_reasoning = False
-        self.ai_has_content = False
-        self.chunk_count = 0
+        self.node = None
+        self.accumulated = None
+
+BLANK_LINE = ""
 
 async def stream_messages(
     agent: Runnable,
@@ -203,176 +202,184 @@ async def stream_messages(
     config: RunnableConfig | None = None,
     **kwargs,
 ):
-    tree = Tree("agent", hide_root=True)
-
-    indent2_spaces = " " * 8
     message_count = 0
 
     def increment_message_count():
         nonlocal message_count
         message_count += 1
 
-    def show_tool_message(message: ToolMessage):
+    def show_tool_message(message: ToolMessage, tree: Tree):
         name = message.name
         id = message.tool_call_id
         show_id = ({id})
-        writeln(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
-        _display_tool_message_content(message)
+        _display_tool_message_content(message, child)
+        child.add(BLANK_LINE)
 
-    def show_system_message(message: SystemMessage):
-        writeln(f"{message_count}. [bold gray0 on gold1]SystemMessage")
-        writeln_indented(message.content, markup=False)
+    def show_system_message(message: SystemMessage, tree: Tree):
+        child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
+        child.add(no_markup(message.content))
+        child.add(BLANK_LINE)
 
-    def show_human_message(message: HumanMessage):
-        writeln(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
-        writeln_indented(message.content, markup=False)
+    def show_human_message(message: HumanMessage, tree: Tree):
+        child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
+        child.add(no_markup(message.content))
+        child.add(BLANK_LINE)
 
-    def show_ai_message(message: AIMessage):
-        writeln(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+    def show_ai_message(message: AIMessage, tree: Tree):
+        child = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
-            write(f"    [bold]reasoning:[/] ")
-            writeln(reasoning, markup=False)
+            reasoning_node = child.add("[bold]reasoning:[/]")
+            reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
+            reasoning_node.add(BLANK_LINE)
         if message.content:
-            write(f"    [bold]content:[/] ")
-            writeln(message.content, markup=False)
+            content_node = child.add("[bold]content:[/]")
+            content_node.add(no_markup(content))
+            content_node.add(BLANK_LINE)
         if message.tool_calls:
-            for tool_call in message.tool_calls:
-                # writeln_indented(json.dumps(tool_call, indent=2))
-                id = tool_call.get("id", "")
-                name = tool_call.get("name", "")
-                if name:
-                    write(f"\n    [bold]{name}[/]")
-                    write("\n" + indent2_spaces)
-
-                args = tool_call.get("args", "")
+            for call in message.tool_calls:
+                # TODO? reuse? with streaming logic
+                name = call.get("name", "")
+                id = call.get("id", "")
+                tool_tree = child.add(f"[bold]{name}[/] ({id})")
+                args = call.get("args", "")
                 if args:
-                    write(json.dumps(args), markup=False)
+                    tool_tree.add(Pretty(args))
+                tool_tree.add(BLANK_LINE)
 
-    def _show_message(message):
+    def _dict_to_message(message: dict) -> BaseMessage:
+        # FYI supported "role" strings: 'human', 'user', 'ai', 'assistant', 'function', 'tool', 'system', or 'developer'
+        role = message.get("role")
+        if role in ("human", "user"):
+            return HumanMessage(**message)
+        if role in ("ai", "assistant"):
+            return AIMessage(**message)
+        # PRN add support for role="function" ... probably can shoehorn into ToolMessage... but I also might want to show it as a separate message type
+        if role == "tool":
+            return ToolMessage(**message)
+        if role in ("system", "developer"):
+            return SystemMessage(**message)
+        raise ValueError(f"Unsupported role: {role}")
+
+    def _show_message(message, tree: Tree):
+        if isinstance(message, dict):
+            message = _dict_to_message(message)
+
         if isinstance(message, HumanMessage):
-            show_human_message(message)
+            show_human_message(message, tree)
         elif isinstance(message, SystemMessage):
-            show_system_message(message)
+            show_system_message(message, tree)
         elif isinstance(message, ToolMessage):
-            show_tool_message(message)
+            show_tool_message(message, tree)
         elif isinstance(message, AIMessage):
-            show_ai_message(message)
+            show_ai_message(message, tree)
         else:
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
-            console.print(f"[red]Unsupported message type: {type(message).__name__}[/]")
-            console.print(message, markup=False)
-        writeln()  # just like on_chat_model_end for non-initial messages
+            branch = tree.add(f"[red]Unsupported message type: {type(message).__name__}[/]")
+            branch.add(Pretty(message))
+            branch.add(BLANK_LINE)
 
-    def on_tool_start(event):
+    def on_tool_start(event: StreamEvent, tree: Tree):
         # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
         #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
         #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
         tool_name = event["name"]
         # AFAICT there is no tool_call_id available on start event
-        writeln_indented(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
+        node = tree.add(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
 
         data = event.get("data")
         args = data.get("input")
         assert isinstance(args, dict)
         if tool_name.startswith("run_python"):
             code = args.get("code", "")
-            writeln_indented(Syntax(code, "python"))
-            writeln()
+            node.add(Syntax(code, "python"))
         elif tool_name.startswith("run_command"):
             commandline = args.get("commandline", "")
-            writeln_indented(Syntax(commandline, "bash"))
-            writeln()
+            node.add(Syntax(commandline, "bash"))
         elif tool_name == "apply_patch":
             patch = args.get("patch", "")
-            writeln_indented(Syntax(patch, "diff"))
-            writeln()
+            node.add(Syntax(patch, "diff"))
         # else: FYI no reason to dump JSON again
+        node.add(BLANK_LINE)
 
-    def on_tool_end(event):
+    def on_tool_end(event: StreamEvent, tree: Tree):
         increment_message_count()
         data = event.get("data")
         output = data.get("output")
         if isinstance(output, ToolMessage):
-            _show_message(output)
+            _show_message(output, tree)
         else:
             # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
             # i.e. update files modified (tmp file creation by subagent)
-            rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
+            tree.add("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
+            tree.add(Pretty(output))
 
-    def on_chat_model_stream(event):
+    def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: Tree):
         # streaming chunks so we can see response as it is generated
-        state.chunk_count += 1
         chunk = event.get("data").get("chunk")
         assert isinstance(chunk, AIMessageChunk)
 
-        if not state.ai_started:
+        if not state.accumulated:
             increment_message_count()
-            state.ai_started = True
-            writeln(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+            state.accumulated = chunk
+            state.node = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
+        else:
+            # accumulated holds cumulative chunks => effectively becomes AIMessage (handles reasoning/content/tool_calls chunking)
+            state.accumulated = state.accumulated + chunk
+
+        assert state.node is not None
+        node = state.node
+        node.children.clear()
 
         # standardized content blocks:
         #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
         #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
-        if not any(chunk.content_blocks):
-            return
+        # if not any(state.accumulated.content_blocks):
+        #     return
 
-        block = chunk.content_blocks[0]
-        # ? what if len(chunk.content) > 1
-        block_type = block.get("type", "")
+        # node.add(Pretty(state.accumulated)) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
 
-        # FYI the following assumes ordered chunks per type
-        #   no interleaving of reasoning/content/tool_call chunks
-        #   all reasoning chunks first (if any) => then content => then tool call(s)
-        # BTW not all providers return reasoning tokens
+        message = state.accumulated
 
         # * model's reasoning
-        # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
-        if block_type == "reasoning":
-            if not state.ai_has_reasoning:
-                write(f"    [bold]reasoning:[/] ")
-                state.ai_has_reasoning = True
-            write(block.get("reasoning", ""), markup=False)
+        reasoning: str = message.additional_kwargs.get("reasoning_content", "")  # w/o content_blocks, most providers set reasoning this way
+        if reasoning:
+            reasoning_node = node.add("[bold]reasoning:[/]")
+            reasoning_node.add(Text(reasoning, style="italic"))
+            reasoning_node.add(BLANK_LINE)
 
         # * model's content
-        # content: str = chunk.content # w/o content_blocks
-        if block_type == "text":
-            if not state.ai_has_content:
-                if state.ai_has_reasoning:
-                    writeln()  # new line to end reasoning
-                write(f"    [bold]content:[/] ")
-                state.ai_has_content = True
-            write(block.get("text", ""), markup=False)
+        content: str = message.content  # w/o content_blocks
+        if content:
+            content_node = node.add("[bold]content:[/]")
+            content_node.add(no_markup(content))
+            content_node.add(BLANK_LINE)
 
         # * model's tool call request
-        # calls = chunk.tool_call_chunks # w/o content_blocks
-        if block_type == "tool_call_chunk":
-            tool_call = block
-            # call_index = tool_call.get("index", "")
+        calls = message.tool_calls  # w/o content_blocks
+        for call in calls:
+            name = call.get("name", "")
+            id = call.get("id", "")
+            tool_tree = node.add(f"[bold]{name}[/] ({id})")
 
-            # * first chunk has name+id:
-            name = tool_call.get("name", "")
-            id = tool_call.get("id", "")
-            if name:
-                write(f"\n    [bold]{name}[/] ({id})")
-                # start args on next line, indented
-                write("\n" + indent2_spaces)
-
-            # * chunks 2+ have part of args
-            args = tool_call.get("args", "")
+            args = call.get("args", "")
             if args:
-                args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
-                write(args_indented, markup=False)
+                tool_tree.add(Pretty(args))
+                # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
+                #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
 
-    def dump_all_events_except_streaming_tokens(event):
+            tool_tree.add(BLANK_LINE)
+
+    def dump_all_events_except_streaming_tokens(event: StreamEvent, tree: Tree):
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
-        console.print(event, markup=False)
+        tree.add(Pretty(event))
 
-    def show_input_messages():
+    def show_input_messages(tree: Tree):
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
@@ -384,7 +391,7 @@ async def stream_messages(
             # don't double wrap in that case
             for msg in input.get("messages", {}):
                 increment_message_count()
-                _show_message(msg)
+                _show_message(msg, tree)
             return
 
         clear_screen()
@@ -394,34 +401,50 @@ async def stream_messages(
         input = {"messages": initial_messages}
         for tool_message in initial_messages:
             increment_message_count()
-            _show_message(tool_message)
+            _show_message(tool_message, tree)
 
-    show_input_messages()
-    events: list[StreamEvent] = []
-    state = StreamingChunksState()
-    event: StreamEvent
-    async for event in agent.astream_events(input, version="v2", config=config, **kwargs):
-        # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
-        # event type naming: on_[runnable_type]_(start|stream|end)
-        # - runnable types: chain, chat_model, tool
-        events.append(event)
+    root = Tree("agent", hide_root=True)
+    root.TREE_GUIDES = [("    ", "    ", "    ", "    ")]
 
-        # dump_all_events_except_streaming_tokens(event)
-        # # continue
+    with Live(
+            root,
+            refresh_per_second=8,
+            vertical_overflow="visible",  # default ellipsis (hides)
+    ) as live:
+        show_input_messages(root)
 
-        event_type = event["event"]
-        if event_type == "on_chain_stream":
-            show_pending_approvals(event)
-        elif event_type == "on_tool_start":
-            on_tool_start(event)
-        elif event_type == "on_tool_end":
-            on_tool_end(event)
-        elif event_type == "on_chat_model_end":
-            writeln()  # all messages end with blank line
-        elif event_type == "on_chat_model_start":
-            state.reset()
-        elif event_type == "on_chat_model_stream":
-            on_chat_model_stream(event)
+        tree = root
+        events: list[StreamEvent] = []
+        streaming_state = StreamingChunksState()
+        event: StreamEvent
+        async for event in agent.astream_events(input, version="v2", config=config, **kwargs):
+            # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
+            # event type naming: on_[runnable_type]_(start|stream|end)
+            # - runnable types: chain, chat_model, tool
+            events.append(event)
+
+            # dump_all_events_except_streaming_tokens(event, tree)  # TODO nesting with rest? should align
+            # # continue
+
+            event_type = event["event"]
+            if event_type == "on_chain_start":
+                # TODO! add nesting
+                # tree = tree.add()
+                pass
+            elif event_type == "on_chain_end":
+                # TODO! pop nesting
+                # tree = tree.parent()?
+                pass
+            elif event_type == "on_chain_stream":
+                show_pending_approvals(event, tree)
+            elif event_type == "on_tool_start":
+                on_tool_start(event, tree)
+            elif event_type == "on_tool_end":
+                on_tool_end(event, tree)
+            elif event_type == "on_chat_model_start":
+                streaming_state.reset()
+            elif event_type == "on_chat_model_stream":
+                on_chat_model_stream(event, streaming_state, tree)
 
     return events
 
