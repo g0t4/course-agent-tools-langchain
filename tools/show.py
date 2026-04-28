@@ -206,30 +206,30 @@ async def stream_messages(
     tree = Tree("agent", hide_root=True)
 
     indent2_spaces = " " * 8
-    message_index = 0
+    message_count = 0
 
     def increment_message_count():
-        nonlocal message_index
-        message_index += 1
+        nonlocal message_count
+        message_count += 1
 
     def show_tool_message(message: ToolMessage):
         name = message.name
         id = message.tool_call_id
         show_id = ({id})
-        writeln(f"{message_index}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        writeln(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message)
 
     def show_system_message(message: SystemMessage):
-        writeln(f"{message_index}. [bold gray0 on gold1]SystemMessage")
+        writeln(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         writeln_indented(message.content, markup=False)
 
     def show_human_message(message: HumanMessage):
-        writeln(f"{message_index}. [bold gray0 on slate_blue1]HumanMessage")
+        writeln(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         writeln_indented(message.content, markup=False)
 
     def show_ai_message(message: AIMessage):
-        writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
+        writeln(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
             write(f"    [bold]reasoning:[/] ")
@@ -311,7 +311,7 @@ async def stream_messages(
         if not state.ai_started:
             increment_message_count()
             state.ai_started = True
-            writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
+            writeln(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
 
         # standardized content blocks:
         #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
