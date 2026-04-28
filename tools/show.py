@@ -299,8 +299,8 @@ async def stream_messages(
             rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
 
     def dump_all_events_except_streaming_tokens(event):
-        event_name = event["event"]
-        if event_name not in {"on_chat_model_stream"}:
+        event_type = event["event"]
+        if event_type not in {"on_chat_model_stream"}:
             console.print(event, markup=False)
 
     def show_input_messages():
@@ -340,20 +340,20 @@ async def stream_messages(
         # dump_all_events_except_streaming_tokens(event)
         # # continue
 
-        event_name = event["event"]
-        if event_name == "on_chain_stream":
+        event_type = event["event"]
+        if event_type == "on_chain_stream":
             show_pending_approvals(event)
-        elif event_name == "on_tool_start":
+        elif event_type == "on_tool_start":
             on_tool_start(event)
-        elif event_name == "on_tool_end":
+        elif event_type == "on_tool_end":
             on_tool_end(event)
-        elif event_name == "on_chat_model_end":
+        elif event_type == "on_chat_model_end":
             writeln()  # all messages end with blank line
-        elif event_name == "on_chat_model_start":
+        elif event_type == "on_chat_model_start":
             state.reset()
 
         # * streaming AIMessageChunks (Model => User)
-        elif event_name == "on_chat_model_stream":
+        elif event_type == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
             state.chunk_count += 1
             data = event.get("data")
