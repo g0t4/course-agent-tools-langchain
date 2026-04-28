@@ -291,8 +291,8 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         if event_name not in {"on_chat_model_stream"}:
             console.print(event, markup=False)
 
-    if isinstance(input, Command):
-        # command => ok as is
+    if isinstance(input, Command) or input is None:
+        # don't show command inputs, that's already obvious in the calling code
         pass
     elif isinstance(input, dict) and "messages" in input:
         # FYI I am not using this, just added this in case
@@ -301,8 +301,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         for msg in input["messages"]:
             message_index += 1
             _show_message(msg)
-    elif input is None:
-        pass
     else:
         # convenience to wrap in messages dict
         clear_screen()  # think Ctrl+L => so chat starts at top and grows downward
