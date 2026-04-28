@@ -298,7 +298,8 @@ async def stream_messages(
             # i.e. update files modified (tmp file creation by subagent)
             rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
 
-    def dump_all_events_except_streaming_tokens():
+    def dump_all_events_except_streaming_tokens(event):
+        event_name = event["event"]
         if event_name not in {"on_chat_model_stream"}:
             console.print(event, markup=False)
 
@@ -335,11 +336,11 @@ async def stream_messages(
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
         events.append(event)
-        event_name = event["event"]
 
-        # dump_all_events_except_streaming_tokens()
+        # dump_all_events_except_streaming_tokens(event)
         # # continue
 
+        event_name = event["event"]
         if event_name == "on_chain_stream":
             show_pending_approvals(event)
         elif event_name == "on_tool_start":
