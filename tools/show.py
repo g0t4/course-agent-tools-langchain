@@ -298,6 +298,71 @@ async def stream_messages(
             # i.e. update files modified (tmp file creation by subagent)
             rich.print("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
 
+    def on_chat_model_stream(event):
+        # streaming chunks so we can see response as it is generated
+        state.chunk_count += 1
+        data = event.get("data")
+        chunk = data.get("chunk")
+        assert isinstance(chunk, AIMessageChunk)
+
+        if not state.ai_started:
+            increment_message_count()
+            state.ai_started = True
+            writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
+
+        # standardized content blocks:
+        #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
+        #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
+        if not any(chunk.content_blocks):
+            continue
+
+        block = chunk.content_blocks[0]
+        # ? what if len(chunk.content) > 1
+        block_type = block.get("type", "")
+
+        # FYI the following assumes ordered chunks per type
+        #   no interleaving of reasoning/content/tool_call chunks
+        #   all reasoning chunks first (if any) => then content => then tool call(s)
+        # BTW not all providers return reasoning tokens
+
+        # * model's reasoning
+        # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
+        if block_type == "reasoning":
+            if not state.ai_has_reasoning:
+                write(f"    [bold]reasoning:[/] ")
+                state.ai_has_reasoning = True
+            write(block.get("reasoning", ""), markup=False)
+
+        # * model's content
+        # content: str = chunk.content # w/o content_blocks
+        if block_type == "text":
+            if not state.ai_has_content:
+                if state.ai_has_reasoning:
+                    writeln()  # new line to end reasoning
+                write(f"    [bold]content:[/] ")
+                state.ai_has_content = True
+            write(block.get("text", ""), markup=False)
+
+        # * model's tool call request
+        # calls = chunk.tool_call_chunks # w/o content_blocks
+        if block_type == "tool_call_chunk":
+            tool_call = block
+            # call_index = tool_call.get("index", "")
+
+            # * first chunk has name+id:
+            name = tool_call.get("name", "")
+            id = tool_call.get("id", "")
+            if name:
+                write(f"\n    [bold]{name}[/] ({id})")
+                # start args on next line, indented
+                write("\n" + indent2_spaces)
+
+            # * chunks 2+ have part of args
+            args = tool_call.get("args", "")
+            if args:
+                args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
+                write(args_indented, markup=False)
+
     def dump_all_events_except_streaming_tokens(event):
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
@@ -352,72 +417,8 @@ async def stream_messages(
             writeln()  # all messages end with blank line
         elif event_type == "on_chat_model_start":
             state.reset()
-
-        # * streaming AIMessageChunks (Model => User)
         elif event_type == "on_chat_model_stream":
-            # streaming chunks so we can see response as it is generated
-            state.chunk_count += 1
-            data = event.get("data")
-            chunk = data.get("chunk")
-            assert isinstance(chunk, AIMessageChunk)
-
-            if not state.ai_started:
-                increment_message_count()
-                state.ai_started = True
-                writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
-
-            # standardized content blocks:
-            #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
-            #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
-            if not any(chunk.content_blocks):
-                continue
-
-            block = chunk.content_blocks[0]
-            # ? what if len(chunk.content) > 1
-            block_type = block.get("type", "")
-
-            # FYI the following assumes ordered chunks per type
-            #   no interleaving of reasoning/content/tool_call chunks
-            #   all reasoning chunks first (if any) => then content => then tool call(s)
-            # BTW not all providers return reasoning tokens
-
-            # * model's reasoning
-            # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
-            if block_type == "reasoning":
-                if not state.ai_has_reasoning:
-                    write(f"    [bold]reasoning:[/] ")
-                    state.ai_has_reasoning = True
-                write(block.get("reasoning", ""), markup=False)
-
-            # * model's content
-            # content: str = chunk.content # w/o content_blocks
-            if block_type == "text":
-                if not state.ai_has_content:
-                    if state.ai_has_reasoning:
-                        writeln()  # new line to end reasoning
-                    write(f"    [bold]content:[/] ")
-                    state.ai_has_content = True
-                write(block.get("text", ""), markup=False)
-
-            # * model's tool call request
-            # calls = chunk.tool_call_chunks # w/o content_blocks
-            if block_type == "tool_call_chunk":
-                tool_call = block
-                # call_index = tool_call.get("index", "")
-
-                # * first chunk has name+id:
-                name = tool_call.get("name", "")
-                id = tool_call.get("id", "")
-                if name:
-                    write(f"\n    [bold]{name}[/] ({id})")
-                    # start args on next line, indented
-                    write("\n" + indent2_spaces)
-
-                # * chunks 2+ have part of args
-                args = tool_call.get("args", "")
-                if args:
-                    args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
-                    write(args_indented, markup=False)
+            on_chat_model_stream(event)
 
     return events
 
