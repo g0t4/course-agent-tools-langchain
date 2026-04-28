@@ -5,6 +5,7 @@ from rich.padding import Padding
 import json
 import sys
 import asyncio
+from dataclasses import dataclass
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -178,6 +179,20 @@ def show_pending_approvals(data):
 
 last_events = []
 
+@dataclass
+class StreamingChunksState:
+    ai_started: bool = False
+    ai_has_reasoning: bool = False
+    ai_has_content: bool = False
+    chunk_count: int = 0
+
+    def reset(self):
+        """reset state for a new model response"""
+        self.ai_started = False
+        self.ai_has_reasoning = False
+        self.ai_has_content = False
+        self.chunk_count = 0
+
 async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
 
     # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
@@ -187,11 +202,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
     SIMULATE_DELAY = False  # artificial delay so you can see chat progression when tok/sec is high (i.e. 200 tok/sec)
     indent2_spaces = " " * 8
 
-    # initialize detectors
-    ai_started = None
-    ai_has_reasoning = False
-    ai_has_content = False
-    chunk_count = 0
+    state = StreamingChunksState()
 
     message_index = 0
 
@@ -338,11 +349,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
         elif event_name == "on_chat_model_start":
-            # reset AIMessage (response) detectors
-            ai_started = None
-            ai_has_reasoning = False
-            ai_has_content = False
-            chunk_count = 0
+            state.reset()
 
             if SIMULATE_DELAY:
                 await asyncio.sleep(0.05)
@@ -350,13 +357,13 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         # * streaming AIMessageChunks (Model => User)
         elif event_name == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
-            chunk_count += 1
+            state.chunk_count += 1
             chunk = data.get("chunk")
             assert isinstance(chunk, AIMessageChunk)
 
-            if not ai_started:
+            if not state.ai_started:
                 message_index += 1
-                ai_started = True
+                state.ai_started = True
                 writeln(f"{message_index}. [bold gray0 on deep_sky_blue3]AIMessage")
 
             # standardized content blocks:
@@ -377,19 +384,19 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             # * model's reasoning
             # reasoning: str = chunk.additional_kwargs.get("reasoning_content", "") # w/o content_blocks, most providers set reasoning this way
             if block_type == "reasoning":
-                if not ai_has_reasoning:
+                if not state.ai_has_reasoning:
                     write(f"    [bold]reasoning:[/] ")
-                    ai_has_reasoning = True
+                    state.ai_has_reasoning = True
                 write(block.get("reasoning", ""), markup=False)
 
             # * model's content
             # content: str = chunk.content # w/o content_blocks
             if block_type == "text":
-                if not ai_has_content:
-                    if ai_has_reasoning:
+                if not state.ai_has_content:
+                    if state.ai_has_reasoning:
                         writeln()  # new line to end reasoning
                     write(f"    [bold]content:[/] ")
-                    ai_has_content = True
+                    state.ai_has_content = True
                 write(block.get("text", ""), markup=False)
 
             # * model's tool call request
@@ -416,9 +423,9 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
                 MIN_SLEEP = 0.005  # 5 ms
                 INITIAL_SLEEP = 0.030  # 20 ms
                 ms = MIN_SLEEP
-                if chunk_count < 100:
+                if state.chunk_count < 100:
                     # Linear decay from INITIAL_SLEEP to MIN_SLEEP over the first 100 chunks
-                    decay_factor = (chunk_count - 1) / 99
+                    decay_factor = (state.chunk_count - 1) / 99
                     ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
                 await asyncio.sleep(ms)
 
