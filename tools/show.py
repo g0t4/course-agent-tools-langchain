@@ -194,7 +194,6 @@ class StreamingChunksState:
 async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
 
     indent2_spaces = " " * 8
-    state = StreamingChunksState()
     message_index = 0
 
     def show_tool_message(message: ToolMessage):
@@ -311,8 +310,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             _show_message(tool_message)
 
     events: list[StreamEvent] = []
-
-    # make explicit I designed around "v2"
+    state = StreamingChunksState()
     event: StreamEvent
     async for event in agent.astream_events(input, version="v2", config=config, **kwargs):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
