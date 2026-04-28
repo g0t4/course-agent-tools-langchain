@@ -316,9 +316,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
         # - runnable types: chain, chat_model, tool
-
         events.append(event)
-
         event_name = event["event"]
         data = event['data']
 
