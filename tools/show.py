@@ -250,6 +250,32 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             console.print(message, markup=False)
         writeln()  # just like on_chat_model_end for non-initial messages
 
+        if event_name == "on_tool_start":
+            # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
+            #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
+            #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
+            tool_name = event["name"]
+            # AFAICT there is no tool_call_id available on start event
+            writeln_indented(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
+
+            args = data.get("input")
+            assert isinstance(args, dict)
+            if tool_name.startswith("run_python"):
+                code = args.get("code", "")
+                writeln_indented(Syntax(code, "python"))
+                writeln()
+            elif tool_name.startswith("run_command"):
+                commandline = args.get("commandline", "")
+                writeln_indented(Syntax(commandline, "bash"))
+                writeln()
+            elif tool_name == "apply_patch":
+                patch = args.get("patch", "")
+                writeln_indented(Syntax(patch, "diff"))
+                writeln()
+            # else: FYI no reason to dump JSON again
+
+
+
     if isinstance(input, Command):
         # command => ok as is
         pass
@@ -299,28 +325,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
 
         # * on_tool_start
         if event_name == "on_tool_start":
-            # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
-            #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
-            #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
-            tool_name = event["name"]
-            # AFAICT there is no tool_call_id available on start event
-            writeln_indented(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
-
-            args = data.get("input")
-            assert isinstance(args, dict)
-            if tool_name.startswith("run_python"):
-                code = args.get("code", "")
-                writeln_indented(Syntax(code, "python"))
-                writeln()
-            elif tool_name.startswith("run_command"):
-                commandline = args.get("commandline", "")
-                writeln_indented(Syntax(commandline, "bash"))
-                writeln()
-            elif tool_name == "apply_patch":
-                patch = args.get("patch", "")
-                writeln_indented(Syntax(patch, "diff"))
-                writeln()
-            # else: FYI no reason to dump JSON again
+            on_tool_start(data, event)
 
         if event_name == "on_tool_end":
             message_index += 1
