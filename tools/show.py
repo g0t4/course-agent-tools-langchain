@@ -199,7 +199,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
     #  thus, if there's a probelm showing something, log a warning and continue
     #  AND that's why events returns the list of events, that way if the history is meaningful to fix the issue... it is available!
 
-    SIMULATE_DELAY = False  # artificial delay so you can see chat progression when tok/sec is high (i.e. 200 tok/sec)
     indent2_spaces = " " * 8
 
     state = StreamingChunksState()
@@ -351,9 +350,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         elif event_name == "on_chat_model_start":
             state.reset()
 
-            if SIMULATE_DELAY:
-                await asyncio.sleep(0.05)
-
         # * streaming AIMessageChunks (Model => User)
         elif event_name == "on_chat_model_stream":
             # streaming chunks so we can see response as it is generated
@@ -418,16 +414,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
                 if args:
                     args_indented = args.replace("\n", f"\n{indent2_spaces}")  # replace with indent to match initial indent
                     write(args_indented, markup=False)
-
-            if SIMULATE_DELAY:
-                MIN_SLEEP = 0.005  # 5 ms
-                INITIAL_SLEEP = 0.030  # 20 ms
-                ms = MIN_SLEEP
-                if state.chunk_count < 100:
-                    # Linear decay from INITIAL_SLEEP to MIN_SLEEP over the first 100 chunks
-                    decay_factor = (state.chunk_count - 1) / 99
-                    ms = INITIAL_SLEEP - (INITIAL_SLEEP - MIN_SLEEP) * decay_factor
-                await asyncio.sleep(ms)
 
     return events
 
