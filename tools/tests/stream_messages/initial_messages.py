@@ -54,6 +54,7 @@ typed_initial_messages = [
         }],
     ),
     ToolMessage(
+        # FYI consternation b/c the two tool outputs do not agree! (model will likely run a tool call again)
         content='{"stdout": "Tue Apr 28 03:04:49 AM CDT 2026\\n", "stderr": null, "returncode": 0}',
         # content='date command not found',
         name='run_command',

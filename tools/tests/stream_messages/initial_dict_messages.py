@@ -64,6 +64,7 @@ dict_initial_messages = [
         ],
     },
     {
+        # FYI consternation b/c the two tool outputs do not agree! (model will likely run a tool call again)
         "role": "tool",
         "content": '{"stdout": "Tue Apr 28 03:04:49 AM CDT 2026\\n", "stderr": null, "returncode": 0}',
         "name": "run_command",
