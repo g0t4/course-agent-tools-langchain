@@ -298,7 +298,7 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
         # FYI I am not using this, just added this in case
         # someone passes { "messages": ... } like you would to astream_events
         # don't double wrap in that case
-        for msg in input["messages"]:
+        for msg in input.get("messages", {}):
             message_index += 1
             _show_message(msg)
     else:
