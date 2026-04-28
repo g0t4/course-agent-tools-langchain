@@ -337,12 +337,6 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             on_tool_end(event)
         elif event_name == "on_chat_model_end":
             writeln()  # all messages end with blank line
-
-            # # dump to test show_ai_message (otherwise only used for initial messages)
-            # if isinstance(message, AIMessage):
-            #     show_ai_message(message)
-            #     writeln()
-
         elif event_name == "on_chat_model_start":
             # reset AIMessage (response) detectors
             ai_started = None
