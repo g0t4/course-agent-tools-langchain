@@ -193,14 +193,8 @@ class StreamingChunksState:
 
 async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | None, *, config: RunnableConfig | None = None, **kwargs):
 
-    # FYI in general, when dumping a trace, especially a live trace, you want to avoid killing the trace
-    #  thus, if there's a probelm showing something, log a warning and continue
-    #  AND that's why events returns the list of events, that way if the history is meaningful to fix the issue... it is available!
-
     indent2_spaces = " " * 8
-
     state = StreamingChunksState()
-
     message_index = 0
 
     def show_tool_message(message: ToolMessage):
