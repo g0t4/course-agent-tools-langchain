@@ -177,8 +177,6 @@ def show_pending_approvals(data):
                     writeln_indented(Padding(str(args), pad=(0, 0, 0, 4)))
             writeln_indented(Padding(f"[italic]{allowed}[/]", pad=(0, 0, 0, 4)))
 
-last_events = []
-
 @dataclass
 class StreamingChunksState:
     ai_started: bool = False
@@ -318,12 +316,10 @@ async def stream_messages(agent: Runnable, input: list[BaseMessage] | Command | 
             message_index += 1
             _show_message(tool_message)
 
-    events = []
-    global last_events
-    last_events = events
-    event: StreamEvent
+    events: list[StreamEvent] = []
 
     # make explicit I designed around "v2"
+    event: StreamEvent
     async for event in agent.astream_events(input, version="v2", config=config, **kwargs):
         # https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events
         # event type naming: on_[runnable_type]_(start|stream|end)
