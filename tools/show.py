@@ -376,7 +376,6 @@ async def stream_messages(
             content_node.blank_line()
         if message.tool_calls:
             for call in message.tool_calls:
-                # TODO? reuse? with streaming logic
                 name = call.get("name", "")
                 id = call.get("id", "")
                 tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
@@ -384,12 +383,14 @@ async def stream_messages(
                 if args:
                     tool_tree.add_pretty(args)
                 tool_tree.blank_line()
+        return child
 
     def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
         # streaming chunks so we can see response as it is generated
         chunk = event.get("data").get("chunk")
         assert isinstance(chunk, AIMessageChunk)
 
+        # * accumulate chunks
         if not state.accumulated:
             increment_message_count()
             state.accumulated = chunk
@@ -397,48 +398,11 @@ async def stream_messages(
             # accumulated holds cumulative chunks => effectively becomes AIMessage (handles reasoning/content/tool_calls chunking)
             state.accumulated = state.accumulated + chunk
 
+        # * replace node
         if state.node:
             state.node.remove_self()
-        state.node = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
-
-        # standardized content blocks:
-        #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
-        #   w.r.t streaming: https://docs.langchain.com/oss/python/langchain/streaming#streaming-thinking-/-reasoning-tokens
-        # if not any(state.accumulated.content_blocks):
-        #     return
-
-        # state.node.add_pretty(state.accumulated) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
-
-        message = state.accumulated
-
-        # * model's reasoning
-        reasoning: str = message.additional_kwargs.get("reasoning_content", "")  # w/o content_blocks, most providers set reasoning this way
-        if reasoning:
-            reasoning_node = state.node.add_markup("[bold]reasoning:[/]")
-            reasoning_node.add(Text(reasoning, style="italic"))
-            reasoning_node.blank_line()
-
-        # * model's content
-        content: str = message.content  # w/o content_blocks
-        if content:
-            content_node = state.node.add_markup("[bold]content:[/]")
-            content_node.add_no_markup(content)
-            content_node.blank_line()
-
-        # * model's tool call request
-        calls = message.tool_calls  # w/o content_blocks
-        for call in calls:
-            name = call.get("name", "")
-            id = call.get("id", "")
-            tool_tree = state.node.add_markup(f"[bold]{name}[/] ({id})")
-
-            args = call.get("args", "")
-            if args:
-                tool_tree.add_pretty(args)
-            # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
-            #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
-
-            tool_tree.blank_line()
+        state.node = show_ai_message(state.accumulated, tree)
+        # state.node.add_pretty(state.accumulated) # DEBUGGING: fixed structure fills out as each chunk arrives (looks cool)
 
     def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: "TreeWrapper"):
         event_type = event["event"]
