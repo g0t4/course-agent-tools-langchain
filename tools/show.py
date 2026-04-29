@@ -100,18 +100,9 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         tree.add_pretty(content)
         return
 
-    try:
-        obj = json.loads(content)
-    except json.JSONDecodeError:
-        # Show the error and raw content in the rich tree instead of the console
-        tree.add_markup("[red]failed to load JSON result:[/]") \
-            .add_no_markup(content)
-        return
-
-    for key, value in obj.items():
-        tree.add_markup(f"[bold]{key}[/]:") \
-            .add_no_markup(str(value))
-        # PRN dump value as json depending on value?
+    # Delegate JSON handling to TreeWrapper.add_json which takes care of parsing
+    # and rendering of the result or any error messages.
+    tree.add_json(content)
 
 def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
@@ -294,6 +285,28 @@ class TreeWrapper(Tree):
             Theme name for colourisation (default ``"monokai"``).
         """
         return self.add(Syntax(code, lexer, theme=theme), **kwargs)
+
+    def add_json(self, json_str: str, **kwargs) -> "TreeWrapper":
+        """Parse *json_str* and add its contents to the tree.
+
+        On parsing failure a red error message and the raw content are added.
+        On success each top‑level ``key: value`` pair is added as a child node
+        where the key is rendered in bold markup and the value is added as a
+        plain text child.
+        """
+        try:
+            obj = json.loads(json_str)
+        except json.JSONDecodeError:
+            # Show the error and raw content in the tree
+            self.add_markup("[red]failed to load JSON result:[/]")\
+                .add_no_markup(json_str)
+            return self
+
+        for key, value in obj.items():
+            # Create a node for the key and attach the value as a child
+            self.add_markup(f"[bold]{key}[/]:")\
+                .add_no_markup(str(value))
+        return self
 
 async def stream_messages(
     agent: Runnable,
