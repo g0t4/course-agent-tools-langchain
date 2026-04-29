@@ -511,9 +511,11 @@ async def stream_messages(
 
             event_type = event["event"]
             if event_type == "on_chain_start":
-                tree = tree.add_no_markup("[chain start]")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
+                name = event.get("name")
+                tree = tree.add_no_markup(f"[chain start] {name}")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
             elif event_type == "on_chain_end":
-                tree.add_no_markup("[chain end]")
+                name = event.get("name")
+                tree.add_no_markup(f"[chain end] {name}")
                 tree = tree.parent
             elif event_type == "on_chain_stream":
                 show_approval_interrupts(event, tree)
