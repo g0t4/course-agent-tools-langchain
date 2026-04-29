@@ -178,6 +178,8 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
 class TreeWrapper(Tree):
     """ Thin wrapper around :class:`rich.tree.Tree` with additional helpers. """
 
+    parent: "TreeWrapper | None" = None
+
     def blank_line(self) -> None:
         BLANK_LINE = ""
 
