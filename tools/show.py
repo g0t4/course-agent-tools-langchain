@@ -1,3 +1,4 @@
+import os
 import rich
 from rich.console import RenderableType
 from rich.style import Style
@@ -288,24 +289,89 @@ async def stream_messages(
             branch.blank_line()
 
     def on_tool_start(event: StreamEvent, tree: "TreeWrapper"):
-        tool_name = event["name"]
-        node = tree.add_markup(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
-        # AFAICT no tool_call_id available in on_tool_start
+        try:
+            tool_name = event["name"]
+            data = event.get("data")
+            args = data.get("input")
 
-        # * show select arguments pretty printed
-        data = event.get("data")
-        args = data.get("input")
-        assert isinstance(args, dict)
-        if tool_name.startswith("run_python"):
-            code = args.get("code", "")
-            node.add_syntax(code, "python")
-        elif tool_name.startswith("run_command"):
-            commandline = args.get("commandline", "")
-            node.add_syntax(commandline, "bash")
-        elif tool_name == "apply_patch":
-            patch = args.get("patch", "")
-            node.add_syntax(patch, "diff")
-        # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
+            # AFAICT no tool_call_id available in on_tool_start
+            # - show.show_tools() => rich.inspect(deepagents.middleware.filesystem.LsSchema)
+
+            # FYI some of the args are intuitive when you see the ToolMessage output
+
+            # * prettify select arguments (i.e. multiline strings that are harder to read in thje JSON like dump from AIMessage tool calls)
+            #   also useful to make the call standout and easy at a glance (i.e. read_file foo/to/bar.txt)
+            #   DO NOT REPEAT all ARGS (i.e. don't need timeout on commands, offset/limit on read_file, etc)
+
+            color = "[bold gray0 on deep_sky_blue3]"
+
+            # * title (first are tools that have custom titles)
+            if tool_name == "task":
+                subagent_type = args.get("subagent_type", "")
+                # PRN consider new color to standout (shade of blue to keep consistent?)
+                node = tree.add_markup(f"{color}Delegating task to {subagent_type}")
+                # description arg => will show in HumanMessage below so no need to repeate it here
+            elif tool_name == "ls":
+                path = args.get("path", "")
+                node = tree.add_markup(f"{color}ls {path}")
+            elif tool_name == "glob":
+                pattern = args.get("pattern", "")
+                path = args.get("path", "")
+                node = tree.add_markup(f"{color}glob {pattern} (in {path})")
+            elif tool_name == "write_file":
+                file_path = args.get("file_path", "")
+                node = tree.add_markup(f"{color}write_file {file_path}")
+                content = args.get("content", "")
+                ext = os.path.splitext(file_path)[1].lstrip(".")
+                node.add_syntax(content, ext)
+            elif tool_name == "read_file":
+                # PRN args offset, limit
+                file_path = args.get("file_path", "")
+                node = tree.add_markup(f"{color}read_file {file_path}")
+            elif tool_name == "edit_file":
+                file_path = args.get("file_path", "")
+                node = tree.add_markup(f"{color}edit_file {file_path}")
+                old = args.get("old_string", "")
+                new = args.get("new_string", "")
+                # build diff (prepend -/+ to old/new respectively)
+                diff = [f"-{line}" for line in old.splitlines()]
+                diff += [f"+{line}" for line in new.splitlines()]
+                diff = "\n".join(diff)
+                node.add_syntax(diff, "diff")
+                # ? or show old/new separate?
+                # skip replace_all arg
+            # elif tool_name == "grep":
+            #     # pattern (not regex), path, glob, output_mode
+            # elif tool_name == "write_todos":
+            #     pass  # ? TODO?
+            else:
+                # generic title
+                node = tree.add_markup(f"{color}Calling {tool_name}")
+
+            # * prettify select arguments (basically for things that use the generic title)
+            assert isinstance(args, dict)
+            if tool_name.startswith("run_python"):
+                code = args.get("code", "")
+                node.add_syntax(code, "python")
+            elif tool_name.startswith("run_command"):
+                commandline = args.get("commandline", "")
+                node.add_syntax(commandline, "bash")
+            elif tool_name == "execute":
+                # timeout = args.get("timeout", "") # show timeout?
+                command = args.get("command", "")
+                node.add_syntax(command, "bash")
+            elif tool_name == "apply_patch":
+                patch = args.get("patch", "")
+                node.add_syntax(patch, "diff")
+            # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
+        except Exception as e:
+            # lots of novel logic... would be terrible to trip this at random and kill a trace
+            #   (i.e. b/c a tool argument name is wrong)
+            #   or maybe issues with unsupported language and Syntax
+            node = tree.add_markup(f"[red]Failed to build Calling tool summary:[/]")
+            node.add_pretty(e)
+            node.blank_line()
+
         node.blank_line()
 
     def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
