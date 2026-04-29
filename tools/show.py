@@ -189,14 +189,7 @@ class TreeWrapper(Tree):
     def add_pretty(self, obj: Any, **kwargs) -> "TreeWrapper":
         return self.add(Pretty(obj), **kwargs)
 
-    def add_syntax(
-        self,
-        code: str,
-        lexer: str,
-        *,
-        theme: str = "monokai",
-        **kwargs,
-    ) -> "TreeWrapper":
+    def add_syntax(self, code: str, lexer: str, *, theme: str = "monokai", **kwargs) -> "TreeWrapper":
         return self.add(Syntax(code, lexer, theme=theme), **kwargs)
 
     def add_sections_from_json_keys(self, json_str: str, **kwargs) -> "TreeWrapper":
