@@ -479,9 +479,9 @@ async def stream_messages(
 
             args = call.get("args", "")
             if args:
-                    tool_tree.add_pretty(args)
-                # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
-                #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
+                tool_tree.add_pretty(args)
+            # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
+            #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
 
             tool_tree.blank_line()
 
