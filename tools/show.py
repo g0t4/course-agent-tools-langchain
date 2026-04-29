@@ -159,7 +159,7 @@ def show_pending_approvals(event: StreamEvent, tree: Tree):
 
     for interrupt in __interrupt__:
         node = tree.add("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
-        blank_line(node)
+        node.blank_line()
         # node.add(Pretty(interrupt)) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
         review_configs = interrupt.value.get("review_configs", [])
@@ -186,7 +186,7 @@ def show_pending_approvals(event: StreamEvent, tree: Tree):
                 else:
                     approval_node.add(Pretty(args))
             approval_node.add(f"[italic]{allowed}[/]")
-            blank_line(approval_node)
+            approval_node.blank_line()
 
 @dataclass
 class StreamingChunksState:
@@ -198,27 +198,53 @@ class StreamingChunksState:
         self.node = None
         self.accumulated = None
 
-def blank_line(tree: Tree) -> None:
-    """Add a blank line to *tree* only if the previous node does not already end with a newline.
-    This is an IMPERFECT approach as you'd have to check multiple tree levels for last node because you could add a \n anywhere, nonetheless this should be largely sufficient
+class TreeWrapper(Tree):
+    """Thin wrapper around :class:`rich.tree.Tree` with additional helpers.
+
+    The wrapper currently provides :meth:`blank_line` and overrides :meth:`add`
+    so that any child nodes created via ``add`` are also instances of
+    ``TreeWrapper``.  This allows the extended API to be used throughout the
+    codebase without needing to manually cast returned nodes.
     """
-    BLANK_LINE = ""
 
-    # TODO walk up the parents to find last child of all levels? the one that literally comes last?
-    if not tree.children:
-        tree.add(BLANK_LINE)
-        return
+    # ---------------------------------------------------------------------
+    # Helper methods
+    # ---------------------------------------------------------------------
+    def blank_line(self) -> None:
+        """Insert a blank line if the previous node does not already end with ``\n``.
+        The implementation mirrors the original ``blank_line`` function but
+        operates on ``self``.
+        """
+        BLANK_LINE = ""
 
-    last = tree.children[-1]
-    label = last.label
-    # Rich Text objects store the plain text in .plain
-    if isinstance(label, Text):
-        ends_newline = label.plain.endswith("\n")
-    else:
-        ends_newline = isinstance(label, str) and label.endswith("\n")
-    # PRN handle any other RenderableTypes here
-    if not ends_newline:
-        tree.add(BLANK_LINE)
+        if not self.children:
+            self.add(BLANK_LINE)
+            return
+
+        last = self.children[-1]
+        label = last.label
+        if isinstance(label, Text):
+            ends_newline = label.plain.endswith("\n")
+        else:
+            ends_newline = isinstance(label, str) and label.endswith("\n")
+        if not ends_newline:
+            self.add(BLANK_LINE)
+
+    # ---------------------------------------------------------------------
+    # Override ``add`` to return ``TreeWrapper`` instances
+    # ---------------------------------------------------------------------
+    def add(self, *renderables, **kwargs):  # type: ignore[override]
+        """Create a child node and ensure it is a ``TreeWrapper``.
+
+        ``rich.tree.Tree.add`` returns a ``Tree`` instance.  By coercing the
+        returned object's class to ``TreeWrapper`` we preserve the full feature
+        set while enabling the extended methods on every node.
+        """
+        node = super().add(*renderables, **kwargs)
+        # Dynamically change the class if it is not already a TreeWrapper.
+        if not isinstance(node, TreeWrapper):
+            node.__class__ = TreeWrapper
+        return node
 
 async def stream_messages(
     agent: Runnable,
@@ -241,17 +267,17 @@ async def stream_messages(
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message, child)
-        blank_line(child)
+        child.blank_line()
 
     def show_system_message(message: SystemMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add(no_markup(message.content))
-        blank_line(child)
+        child.blank_line()
 
     def show_human_message(message: HumanMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         child.add(no_markup(message.content))
-        blank_line(child)
+        child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: Tree):
         child = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
@@ -259,11 +285,11 @@ async def stream_messages(
         if reasoning:
             reasoning_node = child.add("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
-            blank_line(reasoning_node)
+            reasoning_node.blank_line()
         if message.content:
             content_node = child.add("[bold]content:[/]")
             content_node.add(no_markup(message.content))
-            blank_line(content_node)
+            content_node.blank_line()
         if message.tool_calls:
             for call in message.tool_calls:
                 # TODO? reuse? with streaming logic
@@ -273,7 +299,7 @@ async def stream_messages(
                 args = call.get("args", "")
                 if args:
                     tool_tree.add(Pretty(args))
-                blank_line(tool_tree)
+                tool_tree.blank_line()
 
     def _dict_to_message(message: dict) -> BaseMessage:
         # FYI supported "role" strings: 'human', 'user', 'ai', 'assistant', 'function', 'tool', 'system', or 'developer'
@@ -305,7 +331,7 @@ async def stream_messages(
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
             branch = tree.add(f"[red]Unsupported message type: {type(message).__name__}[/]")
             branch.add(Pretty(message))
-            blank_line(branch)
+            branch.blank_line()
 
     def on_tool_start(event: StreamEvent, tree: Tree):
         # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
@@ -328,7 +354,7 @@ async def stream_messages(
             patch = args.get("patch", "")
             node.add(Syntax(patch, "diff"))
         # else: FYI no reason to dump JSON again
-        blank_line(node)
+        node.blank_line()
 
     def on_tool_end(event: StreamEvent, tree: Tree):
         increment_message_count()
@@ -375,14 +401,14 @@ async def stream_messages(
         if reasoning:
             reasoning_node = node.add("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))
-            blank_line(reasoning_node)
+            reasoning_node.blank_line()
 
         # * model's content
         content: str = message.content  # w/o content_blocks
         if content:
             content_node = node.add("[bold]content:[/]")
             content_node.add(no_markup(content))
-            blank_line(content_node)
+            content_node.blank_line()
 
         # * model's tool call request
         calls = message.tool_calls  # w/o content_blocks
@@ -397,7 +423,7 @@ async def stream_messages(
                 # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
                 #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
 
-            blank_line(tool_tree)
+            tool_tree.blank_line()
 
     def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: Tree):
         event_type = event["event"]
@@ -429,7 +455,7 @@ async def stream_messages(
             increment_message_count()
             _show_message(tool_message, tree)
 
-    root = Tree("agent", hide_root=True)
+    root = TreeWrapper("agent", hide_root=True)
     root.TREE_GUIDES = [("    ", "    ", "    ", "    ")]
 
     with Live(
