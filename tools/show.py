@@ -78,7 +78,7 @@ def no_markup(text):
     """
     return Text(text)
 
-def _display_tool_message_content(message: ToolMessage, tree: Tree):
+def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
     if message.name == "run_command":
         _display_tool_message_for_run_command(message, tree)
@@ -93,7 +93,7 @@ def _display_tool_message_content(message: ToolMessage, tree: Tree):
     else:
         tree.add(Pretty(content))  # pretty spans multiple lines, is indented, looks very nice
 
-def _display_tool_message_for_run_command(message: ToolMessage, tree: Tree):
+def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
     if not isinstance(content, str):
         tree.add('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
@@ -113,7 +113,7 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: Tree):
             .add(no_markup(str(value)))
         # PRN dump value as json depending on value?
 
-def show_pending_approvals(event: StreamEvent, tree: Tree):
+def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
     #   use gptoss for one at a time
     #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
@@ -190,7 +190,7 @@ def show_pending_approvals(event: StreamEvent, tree: Tree):
 
 @dataclass
 class StreamingChunksState:
-    node: Tree | None = None
+    node: "TreeWrapper" | None = None
     accumulated: AIMessageChunk | None = None
 
     def reset(self):
@@ -260,7 +260,7 @@ async def stream_messages(
         nonlocal message_count
         message_count += 1
 
-    def show_tool_message(message: ToolMessage, tree: Tree):
+    def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
         name = message.name
         id = message.tool_call_id
         show_id = ({id})
@@ -269,17 +269,17 @@ async def stream_messages(
         _display_tool_message_content(message, child)
         child.blank_line()
 
-    def show_system_message(message: SystemMessage, tree: Tree):
+    def show_system_message(message: SystemMessage, tree: "TreeWrapper"):
         child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add(no_markup(message.content))
         child.blank_line()
 
-    def show_human_message(message: HumanMessage, tree: Tree):
+    def show_human_message(message: HumanMessage, tree: "TreeWrapper"):
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         child.add(no_markup(message.content))
         child.blank_line()
 
-    def show_ai_message(message: AIMessage, tree: Tree):
+    def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
         child = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
@@ -315,7 +315,7 @@ async def stream_messages(
             return SystemMessage(**message)
         raise ValueError(f"Unsupported role: {role}")
 
-    def _show_message(message, tree: Tree):
+    def _show_message(message, tree: "TreeWrapper"):
         if isinstance(message, dict):
             message = _dict_to_message(message)
 
@@ -333,7 +333,7 @@ async def stream_messages(
             branch.add(Pretty(message))
             branch.blank_line()
 
-    def on_tool_start(event: StreamEvent, tree: Tree):
+    def on_tool_start(event: StreamEvent, tree: "TreeWrapper"):
         # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
         #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
         #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
@@ -356,7 +356,7 @@ async def stream_messages(
         # else: FYI no reason to dump JSON again
         node.blank_line()
 
-    def on_tool_end(event: StreamEvent, tree: Tree):
+    def on_tool_end(event: StreamEvent, tree: "TreeWrapper"):
         increment_message_count()
         data = event.get("data")
         output = data.get("output")
@@ -369,7 +369,7 @@ async def stream_messages(
             tree.add("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
             tree.add(Pretty(output))
 
-    def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: Tree):
+    def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
         # streaming chunks so we can see response as it is generated
         chunk = event.get("data").get("chunk")
         assert isinstance(chunk, AIMessageChunk)
@@ -425,13 +425,13 @@ async def stream_messages(
 
             tool_tree.blank_line()
 
-    def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: Tree):
+    def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: "TreeWrapper"):
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
         tree.add(Pretty(event))
 
-    def show_input_messages(tree: Tree):
+    def show_input_messages(tree: "TreeWrapper"):
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
