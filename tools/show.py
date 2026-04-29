@@ -410,7 +410,7 @@ async def stream_messages(
             return
             tree.add_pretty(event)
 
-    def show_input_messages(tree: "TreeWrapper"):
+    def show_initial_messages(tree: "TreeWrapper"):
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
@@ -442,7 +442,7 @@ async def stream_messages(
             refresh_per_second=8,
             vertical_overflow="visible",  # default ellipsis (hides)
     ) as live:
-        show_input_messages(root)
+        show_initial_messages(root)
 
         tree = root
         events: list[StreamEvent] = []
