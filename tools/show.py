@@ -277,14 +277,6 @@ async def stream_messages(
         nonlocal message_count
         message_count += 1
 
-    def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
-        name = message.name
-        id = message.tool_call_id
-        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
-        # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
-        _display_tool_message_content(message, child)
-        child.blank_line()
-
     def show_system_message(message: SystemMessage, tree: "TreeWrapper"):
         child = tree.add_markup(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add_no_markup(message.content)
@@ -349,6 +341,14 @@ async def stream_messages(
             node.add_syntax(patch, "diff")
         # else: FYI no reason to dump JSON again
         node.blank_line()
+
+    def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
+        name = message.name
+        id = message.tool_call_id
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
+        _display_tool_message_content(message, child)
+        child.blank_line()
 
     def on_tool_end(event: StreamEvent, tree: "TreeWrapper"):
         increment_message_count()
