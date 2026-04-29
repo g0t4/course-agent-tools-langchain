@@ -355,7 +355,7 @@ async def stream_messages(
         data = event.get("data")
         output = data.get("output")
         if isinstance(output, ToolMessage):
-            _show_message(output, tree)
+            show_tool_message(output, tree)
         else:
             # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
