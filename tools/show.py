@@ -98,7 +98,7 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')
         tree.add_pretty(message.content)
         return
-    tree.add_json_keys_sections(message.content)
+    tree.add_sections_from_json_keys(message.content)
 
 def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
@@ -222,7 +222,7 @@ class TreeWrapper(Tree):
     ) -> "TreeWrapper":
         return self.add(Syntax(code, lexer, theme=theme), **kwargs)
 
-    def add_json_keys_sections(self, json_str: str, **kwargs) -> "TreeWrapper":
+    def add_sections_from_json_keys(self, json_str: str, **kwargs) -> "TreeWrapper":
         try:
             obj = json.loads(json_str)
         except json.JSONDecodeError:
