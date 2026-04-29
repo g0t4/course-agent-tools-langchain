@@ -100,9 +100,7 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         tree.add_pretty(content)
         return
 
-    # Delegate JSON handling to TreeWrapper.add_json which takes care of parsing
-    # and rendering of the result or any error messages.
-    tree.add_json(content)
+    tree.add_json_keys_sections(content)
 
 def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
@@ -286,7 +284,7 @@ class TreeWrapper(Tree):
         """
         return self.add(Syntax(code, lexer, theme=theme), **kwargs)
 
-    def add_json(self, json_str: str, **kwargs) -> "TreeWrapper":
+    def add_json_keys_sections(self, json_str: str, **kwargs) -> "TreeWrapper":
         """Parse *json_str* and add its contents to the tree.
 
         On parsing failure a red error message and the raw content are added.
