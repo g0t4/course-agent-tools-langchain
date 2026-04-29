@@ -99,7 +99,6 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
         tree.add_pretty(content)
         return
-
     tree.add_json_keys_sections(content)
 
 def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
