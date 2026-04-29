@@ -393,14 +393,13 @@ async def stream_messages(
         if not state.accumulated:
             increment_message_count()
             state.accumulated = chunk
-            state.node = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
         else:
             # accumulated holds cumulative chunks => effectively becomes AIMessage (handles reasoning/content/tool_calls chunking)
             state.accumulated = state.accumulated + chunk
 
-        assert state.node is not None
-        node = state.node
-        node.children.clear()
+        if state.node:
+            state.node.remove_self()
+        state.node = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
 
         # standardized content blocks:
         #   https://docs.langchain.com/oss/python/langchain/messages#standard-content-blocks
@@ -408,21 +407,21 @@ async def stream_messages(
         # if not any(state.accumulated.content_blocks):
         #     return
 
-        # node.add_pretty(state.accumulated) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
+        # state.node.add_pretty(state.accumulated) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
 
         message = state.accumulated
 
         # * model's reasoning
         reasoning: str = message.additional_kwargs.get("reasoning_content", "")  # w/o content_blocks, most providers set reasoning this way
         if reasoning:
-            reasoning_node = node.add_markup("[bold]reasoning:[/]")
+            reasoning_node = state.node.add_markup("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))
             reasoning_node.blank_line()
 
         # * model's content
         content: str = message.content  # w/o content_blocks
         if content:
-            content_node = node.add_markup("[bold]content:[/]")
+            content_node = state.node.add_markup("[bold]content:[/]")
             content_node.add_no_markup(content)
             content_node.blank_line()
 
@@ -431,7 +430,7 @@ async def stream_messages(
         for call in calls:
             name = call.get("name", "")
             id = call.get("id", "")
-            tool_tree = node.add_markup(f"[bold]{name}[/] ({id})")
+            tool_tree = state.node.add_markup(f"[bold]{name}[/] ({id})")
 
             args = call.get("args", "")
             if args:
