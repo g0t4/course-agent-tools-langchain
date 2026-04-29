@@ -93,7 +93,7 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         return
     tree.add_sections_from_json_keys(message.content)
 
-def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
+def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
     #   use gptoss for one at a time
     #   use Qwen3.6 for parallel tool calls w/ two approvals arriving together
@@ -456,7 +456,7 @@ async def stream_messages(
                 tree.add_no_markup("[chain end]")
                 tree = tree.parent
             elif event_type == "on_chain_stream":
-                show_pending_approvals(event, tree)
+                show_approval_interrupts(event, tree)
             elif event_type == "on_tool_start":
                 on_tool_start(event, tree)
             elif event_type == "on_tool_end":
