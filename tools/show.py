@@ -95,7 +95,7 @@ def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
 
 def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
     if not isinstance(message.content, str):
-        tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
+        tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')
         tree.add_pretty(message.content)
         return
     tree.add_json_keys_sections(message.content)
