@@ -175,16 +175,6 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
             approval_node.add_markup(f"[italic]{allowed}[/]")
             approval_node.blank_line()
 
-@dataclass
-class StreamingChunksState:
-    node: "TreeWrapper | None" = None
-    accumulated: AIMessageChunk | None = None
-
-    def reset(self):
-        """reset state for a new model response"""
-        self.node = None
-        self.accumulated = None
-
 class TreeWrapper(Tree):
     """ Thin wrapper around :class:`rich.tree.Tree` with additional helpers. """
 
@@ -246,6 +236,16 @@ class TreeWrapper(Tree):
             self.add_markup(f"[bold]{key}[/]:")\
                 .add_no_markup(str(value))
         return self
+
+@dataclass
+class StreamingChunksState:
+    node: "TreeWrapper | None" = None
+    accumulated: AIMessageChunk | None = None
+
+    def reset(self):
+        """reset state for a new model response"""
+        self.node = None
+        self.accumulated = None
 
 async def stream_messages(
     agent: Runnable,
