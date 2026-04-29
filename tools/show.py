@@ -244,6 +244,15 @@ class TreeWrapper(Tree):
             .add_no_markup(str(value))
         return self
 
+    def remove_self(self):
+        if self.parent:
+            try:
+                self.parent.children.remove(self)
+            except ValueError:
+                pass
+            self.parent = None
+        return self
+
 @dataclass
 class StreamingChunksState:
     node: TreeWrapper | None = None
