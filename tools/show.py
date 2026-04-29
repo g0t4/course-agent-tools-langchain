@@ -286,28 +286,6 @@ async def stream_messages(
         child.add_no_markup(message.content)
         child.blank_line()
 
-    def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
-        child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
-        reasoning = message.additional_kwargs.get("reasoning_content")
-        if reasoning:
-            reasoning_node = child.add_markup("[bold]reasoning:[/]")
-            reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
-            reasoning_node.blank_line()
-        if message.content:
-            content_node = child.add_markup("[bold]content:[/]")
-            content_node.add_no_markup(message.content)
-            content_node.blank_line()
-        if message.tool_calls:
-            for call in message.tool_calls:
-                # TODO? reuse? with streaming logic
-                name = call.get("name", "")
-                id = call.get("id", "")
-                tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
-                args = call.get("args", "")
-                if args:
-                    tool_tree.add_pretty(args)
-                tool_tree.blank_line()
-
     def _dict_to_message(message: dict) -> BaseMessage:
         # FYI supported "role" strings: 'human', 'user', 'ai', 'assistant', 'function', 'tool', 'system', or 'developer'
         role = message.get("role")
@@ -375,6 +353,28 @@ async def stream_messages(
             # i.e. update files modified (tmp file creation by subagent)
             tree.add_markup("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
             tree.add_pretty(output)
+
+    def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
+        child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+        reasoning = message.additional_kwargs.get("reasoning_content")
+        if reasoning:
+            reasoning_node = child.add_markup("[bold]reasoning:[/]")
+            reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
+            reasoning_node.blank_line()
+        if message.content:
+            content_node = child.add_markup("[bold]content:[/]")
+            content_node.add_no_markup(message.content)
+            content_node.blank_line()
+        if message.tool_calls:
+            for call in message.tool_calls:
+                # TODO? reuse? with streaming logic
+                name = call.get("name", "")
+                id = call.get("id", "")
+                tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
+                args = call.get("args", "")
+                if args:
+                    tool_tree.add_pretty(args)
+                tool_tree.blank_line()
 
     def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
         # streaming chunks so we can see response as it is generated
