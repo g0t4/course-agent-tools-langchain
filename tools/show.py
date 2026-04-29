@@ -71,13 +71,6 @@ def clear_screen():
         # Silently ignore if IPython is not available or any error occurs.
         pass
 
-def no_markup(text):
-    """ 
-    wrapper to make clear I don't want markup 
-    Text alone is not specific, ableit it works too
-    """
-    return Text(text)
-
 def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
     if message.name == "run_command":
@@ -206,7 +199,8 @@ class TreeWrapper(Tree):
 
     def add_no_markup(self, text: str, **kwargs) -> "TreeWrapper":
         """ make explicit this content should not have markup rendered """
-        return self.add(no_markup(text), **kwargs)
+        # btw Text == plain unless you pass a style arg
+        return self.add(Text(text), **kwargs)
 
     def add_markup(self, text: str, **kwargs) -> "TreeWrapper":
         """ this is purely for readability, to make it clear that the content should have markup rendered """
