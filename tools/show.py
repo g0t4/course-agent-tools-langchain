@@ -190,7 +190,7 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
 
 @dataclass
 class StreamingChunksState:
-    node: "TreeWrapper" | None = None
+    node: "TreeWrapper | None" = None
     accumulated: AIMessageChunk | None = None
 
     def reset(self):
