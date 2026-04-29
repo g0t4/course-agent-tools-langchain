@@ -485,13 +485,10 @@ async def stream_messages(
 
             event_type = event["event"]
             if event_type == "on_chain_start":
-                # TODO! add nesting
-                tree = tree.add("chain")
-                pass
+                tree = tree.add_no_markup("[chain start]")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
             elif event_type == "on_chain_end":
-                # TODO! pop nesting
+                tree.add_no_markup("[chain end]")
                 tree = tree.parent
-                pass
             elif event_type == "on_chain_stream":
                 show_pending_approvals(event, tree)
             elif event_type == "on_tool_start":
