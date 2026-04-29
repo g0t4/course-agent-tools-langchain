@@ -73,28 +73,6 @@ def clear_screen():
         # Silently ignore if IPython is not available or any error occurs.
         pass
 
-def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
-    content = message.content
-    if message.name == "run_command":
-        _display_tool_message_for_run_command(message, tree)
-    # elif message.name == "run_python":
-    #    _display_tool_run_python(message, tree)
-    elif isinstance(content, str):
-        lines = content.splitlines()
-        if len(lines) > 5:
-            tree.add_no_markup("\n".join(lines[:5]) + "\n...")
-        else:
-            tree.add_no_markup(content)
-    else:
-        tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
-
-def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
-    if not isinstance(message.content, str):
-        tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')
-        tree.add_pretty(message.content)
-        return
-    tree.add_sections_from_json_keys(message.content)
-
 def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
     #   use gptoss for one at a time
@@ -335,6 +313,28 @@ async def stream_messages(
             node.add_syntax(patch, "diff")
         # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
         node.blank_line()
+
+    def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
+        content = message.content
+        if message.name == "run_command":
+            _display_tool_message_for_run_command(message, tree)
+        # elif message.name == "run_python":
+        #    _display_tool_run_python(message, tree)
+        elif isinstance(content, str):
+            lines = content.splitlines()
+            if len(lines) > 5:
+                tree.add_no_markup("\n".join(lines[:5]) + "\n...")
+            else:
+                tree.add_no_markup(content)
+        else:
+            tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
+
+    def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
+        if not isinstance(message.content, str):
+            tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')
+            tree.add_pretty(message.content)
+            return
+        tree.add_sections_from_json_keys(message.content)
 
     def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
         name = message.name
