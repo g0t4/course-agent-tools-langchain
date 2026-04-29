@@ -90,8 +90,8 @@ def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
             tree.add_no_markup("\n".join(lines[:5]) + "\n...")
         else:
             tree.add_no_markup(content)
-        else:
-            tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
+    else:
+        tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
 
 def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
@@ -347,7 +347,7 @@ async def stream_messages(
                 tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
                 args = call.get("args", "")
                 if args:
-            tool_tree.add_pretty(args)
+                    tool_tree.add_pretty(args)
                 tool_tree.blank_line()
 
     def _dict_to_message(message: dict) -> BaseMessage:
