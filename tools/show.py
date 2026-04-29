@@ -199,6 +199,7 @@ class TreeWrapper(Tree):
         node = super().add(*renderables, **kwargs)
         if not isinstance(node, TreeWrapper):
             node.__class__ = TreeWrapper
+        node.parent = self
         return node
 
     def add_no_markup(self, text: str, **kwargs) -> "TreeWrapper":
@@ -485,11 +486,11 @@ async def stream_messages(
             event_type = event["event"]
             if event_type == "on_chain_start":
                 # TODO! add nesting
-                # tree = tree.add()
+                tree = tree.add("chain")
                 pass
             elif event_type == "on_chain_end":
                 # TODO! pop nesting
-                # tree = tree.parent()?
+                tree = tree.parent
                 pass
             elif event_type == "on_chain_stream":
                 show_pending_approvals(event, tree)
