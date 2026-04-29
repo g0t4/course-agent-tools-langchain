@@ -309,28 +309,28 @@ async def stream_messages(
             if tool_name == "task":
                 subagent_type = args.get("subagent_type", "")
                 # PRN consider new color to standout (shade of blue to keep consistent?)
-                node = tree.add_markup(f"{color}Delegating task to {subagent_type}")
+                node = tree.add_markup(f"{color}Delegating {tool_name} to {subagent_type}")
                 # description arg => will show in HumanMessage below so no need to repeate it here
             elif tool_name == "ls":
                 path = args.get("path", "")
-                node = tree.add_markup(f"{color}ls {path}")
+                node = tree.add_markup(f"{color}{tool_name} {path}")
             elif tool_name == "glob":
                 pattern = args.get("pattern", "")
                 path = args.get("path", "")
-                node = tree.add_markup(f"{color}glob {pattern} (in {path})")
+                node = tree.add_markup(f"{color}{tool_name} {pattern} (in {path})")
             elif tool_name == "write_file":
                 file_path = args.get("file_path", "")
-                node = tree.add_markup(f"{color}write_file {file_path}")
+                node = tree.add_markup(f"{color}{tool_name} {file_path}")
                 content = args.get("content", "")
                 ext = os.path.splitext(file_path)[1].lstrip(".")
                 node.add_syntax(content, ext)
             elif tool_name == "read_file":
                 # PRN args offset, limit
                 file_path = args.get("file_path", "")
-                node = tree.add_markup(f"{color}read_file {file_path}")
+                node = tree.add_markup(f"{color}{tool_name} {file_path}")
             elif tool_name == "edit_file":
                 file_path = args.get("file_path", "")
-                node = tree.add_markup(f"{color}edit_file {file_path}")
+                node = tree.add_markup(f"{color}{tool_name} {file_path}")
                 old = args.get("old_string", "")
                 new = args.get("new_string", "")
                 # build diff (prepend -/+ to old/new respectively)
