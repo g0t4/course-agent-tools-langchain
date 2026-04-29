@@ -357,7 +357,6 @@ async def stream_messages(
                 commandline = args.get("commandline", "")
                 node.add_syntax(commandline, "bash")
             elif tool_name == "execute":
-                # timeout = args.get("timeout", "") # show timeout?
                 command = args.get("command", "")
                 node.add_syntax(command, "bash")
             elif tool_name == "apply_patch":
