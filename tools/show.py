@@ -233,8 +233,12 @@ class TreeWrapper(Tree):
 
         for key, value in obj.items():
             # Create a node for the key and attach the value as a child
-            self.add_markup(f"[bold]{key}[/]:")\
-                .add_no_markup(str(value))
+            self.add_section(key, value)
+        return self
+
+    def add_section(self, title: str, value: Any) -> "TreeWrapper":
+        self.add_markup(f"[bold]{title}[/]:")\
+            .add_no_markup(str(value))
         return self
 
 @dataclass
