@@ -411,11 +411,10 @@ async def stream_messages(
         if isinstance(output, ToolMessage):
             show_tool_message(output, tree)
         else:
-            # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
-            # i.e. update files modified (tmp file creation by subagent)
-            tree.add_markup("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
-            tree.add_pretty(output)
+            tree.add_pretty(output)  # FYI I actually like seeing the object, that seems good enough for now
+            # tree.add_markup("[red bold] TODO SHOW ANYTHING else for on_tool_end when output is not just a ToolMessage?")
+            # i.e. channels modified? update files modified (tmp file creation by subagent)
 
     def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
         child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
