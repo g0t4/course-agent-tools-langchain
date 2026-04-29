@@ -87,9 +87,9 @@ def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
     elif isinstance(content, str):
         lines = content.splitlines()
         if len(lines) > 5:
-            tree.add(no_markup("\n".join(lines[:5]) + "\n..."))
+            tree.add_no_markup("\n".join(lines[:5]) + "\n...")
         else:
-            tree.add(no_markup(content))
+            tree.add_no_markup(content)
     else:
         tree.add(Pretty(content))  # pretty spans multiple lines, is indented, looks very nice
 
@@ -105,12 +105,12 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
     except json.JSONDecodeError:
         # Show the error and raw content in the rich tree instead of the console
         tree.add("[red]failed to load JSON result:[/]") \
-            .add(no_markup(content))
+            .add_no_markup(content)
         return
 
     for key, value in obj.items():
         tree.add(f"[bold]{key}[/]:") \
-            .add(no_markup(str(value)))
+            .add_no_markup(str(value))
         # PRN dump value as json depending on value?
 
 def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
@@ -246,6 +246,15 @@ class TreeWrapper(Tree):
             node.__class__ = TreeWrapper
         return node
 
+    def add_no_markup(self, text: str, **kwargs) -> "TreeWrapper":
+        """Add a child node containing plain text without Rich markup.
+
+        This is a convenience wrapper around ``self.add(no_markup(text))``
+        that returns the newly created ``TreeWrapper`` node, mirroring the
+        behaviour of :meth:`add`.
+        """
+        return self.add(no_markup(text), **kwargs)
+
 async def stream_messages(
     agent: Runnable,
     input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
@@ -271,12 +280,12 @@ async def stream_messages(
 
     def show_system_message(message: SystemMessage, tree: "TreeWrapper"):
         child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
-        child.add(no_markup(message.content))
+        child.add_no_markup(message.content)
         child.blank_line()
 
     def show_human_message(message: HumanMessage, tree: "TreeWrapper"):
         child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
-        child.add(no_markup(message.content))
+        child.add_no_markup(message.content)
         child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
@@ -288,7 +297,7 @@ async def stream_messages(
             reasoning_node.blank_line()
         if message.content:
             content_node = child.add("[bold]content:[/]")
-            content_node.add(no_markup(message.content))
+            content_node.add_no_markup(message.content)
             content_node.blank_line()
         if message.tool_calls:
             for call in message.tool_calls:
@@ -407,7 +416,7 @@ async def stream_messages(
         content: str = message.content  # w/o content_blocks
         if content:
             content_node = node.add("[bold]content:[/]")
-            content_node.add(no_markup(content))
+            content_node.add_no_markup(content)
             content_node.blank_line()
 
         # * model's tool call request
