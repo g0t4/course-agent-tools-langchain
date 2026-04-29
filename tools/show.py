@@ -245,6 +245,7 @@ async def stream_messages(
     config: RunnableConfig | None = None,
     **kwargs,
 ):
+    # TODO remove message count so I don't have to worry about decrement (i.e. RemoveMessage, summarization), Commands, and subagents
     message_count = 0
 
     def increment_message_count():
