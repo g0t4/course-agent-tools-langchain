@@ -320,13 +320,11 @@ async def stream_messages(
             branch.blank_line()
 
     def on_tool_start(event: StreamEvent, tree: "TreeWrapper"):
-        # purpose is merely to show the arguments pretty printed (i.e. code/commandline)
-        #  these are already shown from AIMessageChunks, so I don't have to redisplay these here
-        #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
         tool_name = event["name"]
-        # AFAICT there is no tool_call_id available on start event
         node = tree.add_markup(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
+        # AFAICT no tool_call_id available in on_tool_start
 
+        # * show select arguments pretty printed
         data = event.get("data")
         args = data.get("input")
         assert isinstance(args, dict)
@@ -339,7 +337,7 @@ async def stream_messages(
         elif tool_name == "apply_patch":
             patch = args.get("patch", "")
             node.add_syntax(patch, "diff")
-        # else: FYI no reason to dump JSON again
+        # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
         node.blank_line()
 
     def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
