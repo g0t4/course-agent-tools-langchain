@@ -96,7 +96,7 @@ def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
 def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
     if not isinstance(content, str):
-        tree.add('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
+        tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
         tree.add_pretty(content)
         return
 
@@ -104,12 +104,12 @@ def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapp
         obj = json.loads(content)
     except json.JSONDecodeError:
         # Show the error and raw content in the rich tree instead of the console
-        tree.add("[red]failed to load JSON result:[/]") \
+        tree.add_markup("[red]failed to load JSON result:[/]") \
             .add_no_markup(content)
         return
 
     for key, value in obj.items():
-        tree.add(f"[bold]{key}[/]:") \
+        tree.add_markup(f"[bold]{key}[/]:") \
             .add_no_markup(str(value))
         # PRN dump value as json depending on value?
 
@@ -158,7 +158,7 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
         return
 
     for interrupt in __interrupt__:
-        node = tree.add("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
+        node = tree.add_markup("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
         node.blank_line()
         # node.add(Pretty(interrupt)) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
@@ -185,7 +185,7 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
                     approval_node.add_syntax(patch, "diff")
                 else:
                     approval_node.add_pretty(args)
-            approval_node.add(f"[italic]{allowed}[/]")
+            approval_node.add_markup(f"[italic]{allowed}[/]")
             approval_node.blank_line()
 
 @dataclass
@@ -255,6 +255,14 @@ class TreeWrapper(Tree):
         """
         return self.add(no_markup(text), **kwargs)
 
+    def add_markup(self, text: str, **kwargs) -> "TreeWrapper":
+        """Add a child node where *text* may contain Rich markup.
+
+        This mirrors the original ``Tree.add`` behavior but returns a
+        ``TreeWrapper`` instance for method chaining.
+        """
+        return self.add(text, **kwargs)
+
     # -----------------------------------------------------------------
     # Additional convenience helpers
     # -----------------------------------------------------------------
@@ -305,30 +313,30 @@ async def stream_messages(
         name = message.name
         id = message.tool_call_id
         show_id = ({id})
-        child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message, child)
         child.blank_line()
 
     def show_system_message(message: SystemMessage, tree: "TreeWrapper"):
-        child = tree.add(f"{message_count}. [bold gray0 on gold1]SystemMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add_no_markup(message.content)
         child.blank_line()
 
     def show_human_message(message: HumanMessage, tree: "TreeWrapper"):
-        child = tree.add(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         child.add_no_markup(message.content)
         child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
-        child = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
-            reasoning_node = child.add("[bold]reasoning:[/]")
+            reasoning_node = child.add_markup("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
             reasoning_node.blank_line()
         if message.content:
-            content_node = child.add("[bold]content:[/]")
+            content_node = child.add_markup("[bold]content:[/]")
             content_node.add_no_markup(message.content)
             content_node.blank_line()
         if message.tool_calls:
@@ -336,7 +344,7 @@ async def stream_messages(
                 # TODO? reuse? with streaming logic
                 name = call.get("name", "")
                 id = call.get("id", "")
-                tool_tree = child.add(f"[bold]{name}[/] ({id})")
+                tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
                 args = call.get("args", "")
                 if args:
             tool_tree.add_pretty(args)
@@ -370,7 +378,7 @@ async def stream_messages(
             show_ai_message(message, tree)
         else:
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
-            branch = tree.add(f"[red]Unsupported message type: {type(message).__name__}[/]")
+            branch = tree.add_markup(f"[red]Unsupported message type: {type(message).__name__}[/]")
             branch.add_pretty(message)
             branch.blank_line()
 
@@ -380,7 +388,7 @@ async def stream_messages(
         #  PRN maybe I should score the need to redisplay them? and not do so unless it is a multiline known long arg
         tool_name = event["name"]
         # AFAICT there is no tool_call_id available on start event
-        node = tree.add(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
+        node = tree.add_markup(f"[bold gray0 on deep_sky_blue3]Calling {tool_name}")
 
         data = event.get("data")
         args = data.get("input")
@@ -407,7 +415,7 @@ async def stream_messages(
             # raise NotImplementedError("TODO how to display on_tool_end when output is not just a ToolMessage")
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
             # i.e. update files modified (tmp file creation by subagent)
-            tree.add("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
+            tree.add_markup("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
             tree.add_pretty(output)
 
     def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
@@ -418,7 +426,7 @@ async def stream_messages(
         if not state.accumulated:
             increment_message_count()
             state.accumulated = chunk
-            state.node = tree.add(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
+            state.node = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")  # FYI header never needs updated (not currently)
         else:
             # accumulated holds cumulative chunks => effectively becomes AIMessage (handles reasoning/content/tool_calls chunking)
             state.accumulated = state.accumulated + chunk
@@ -440,14 +448,14 @@ async def stream_messages(
         # * model's reasoning
         reasoning: str = message.additional_kwargs.get("reasoning_content", "")  # w/o content_blocks, most providers set reasoning this way
         if reasoning:
-            reasoning_node = node.add("[bold]reasoning:[/]")
+            reasoning_node = node.add_markup("[bold]reasoning:[/]")
             reasoning_node.add(Text(reasoning, style="italic"))
             reasoning_node.blank_line()
 
         # * model's content
         content: str = message.content  # w/o content_blocks
         if content:
-            content_node = node.add("[bold]content:[/]")
+            content_node = node.add_markup("[bold]content:[/]")
             content_node.add_no_markup(content)
             content_node.blank_line()
 
@@ -456,7 +464,7 @@ async def stream_messages(
         for call in calls:
             name = call.get("name", "")
             id = call.get("id", "")
-            tool_tree = node.add(f"[bold]{name}[/] ({id})")
+            tool_tree = node.add_markup(f"[bold]{name}[/] ({id})")
 
             args = call.get("args", "")
             if args:
