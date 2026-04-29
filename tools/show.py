@@ -186,22 +186,9 @@ class StreamingChunksState:
         self.accumulated = None
 
 class TreeWrapper(Tree):
-    """Thin wrapper around :class:`rich.tree.Tree` with additional helpers.
+    """ Thin wrapper around :class:`rich.tree.Tree` with additional helpers. """
 
-    The wrapper currently provides :meth:`blank_line` and overrides :meth:`add`
-    so that any child nodes created via ``add`` are also instances of
-    ``TreeWrapper``.  This allows the extended API to be used throughout the
-    codebase without needing to manually cast returned nodes.
-    """
-
-    # ---------------------------------------------------------------------
-    # Helper methods
-    # ---------------------------------------------------------------------
     def blank_line(self) -> None:
-        """Insert a blank line if the previous node does not already end with ``\n``.
-        The implementation mirrors the original ``blank_line`` function but
-        operates on ``self``.
-        """
         BLANK_LINE = ""
 
         if not self.children:
@@ -217,48 +204,22 @@ class TreeWrapper(Tree):
         if not ends_newline:
             self.add(BLANK_LINE)
 
-    # ---------------------------------------------------------------------
-    # Override ``add`` to return ``TreeWrapper`` instances
-    # ---------------------------------------------------------------------
-    def add(self, *renderables, **kwargs):  # type: ignore[override]
-        """Create a child node and ensure it is a ``TreeWrapper``.
-
-        ``rich.tree.Tree.add`` returns a ``Tree`` instance.  By coercing the
-        returned object's class to ``TreeWrapper`` we preserve the full feature
-        set while enabling the extended methods on every node.
-        """
+    def add(self, *renderables, **kwargs) -> "TreeWrapper":
+        """ make sure child trees are all TreeWrapper type too """
         node = super().add(*renderables, **kwargs)
-        # Dynamically change the class if it is not already a TreeWrapper.
         if not isinstance(node, TreeWrapper):
             node.__class__ = TreeWrapper
         return node
 
     def add_no_markup(self, text: str, **kwargs) -> "TreeWrapper":
-        """Add a child node containing plain text without Rich markup.
-
-        This is a convenience wrapper around ``self.add(no_markup(text))``
-        that returns the newly created ``TreeWrapper`` node, mirroring the
-        behaviour of :meth:`add`.
-        """
+        """ make explicit this content should not have markup rendered """
         return self.add(no_markup(text), **kwargs)
 
     def add_markup(self, text: str, **kwargs) -> "TreeWrapper":
-        """Add a child node where *text* may contain Rich markup.
-
-        This mirrors the original ``Tree.add`` behavior but returns a
-        ``TreeWrapper`` instance for method chaining.
-        """
+        """ this is purely for readability, to make it clear that the content should have markup rendered """
         return self.add(text, **kwargs)
 
-    # -----------------------------------------------------------------
-    # Additional convenience helpers
-    # -----------------------------------------------------------------
     def add_pretty(self, obj: Any, **kwargs) -> "TreeWrapper":
-        """Add a child node that pretty‑prints *obj* using ``rich.pretty.Pretty``.
-
-        This mirrors the existing pattern ``tree.add(Pretty(obj))`` but keeps the
-        call site succinct and returns the newly created ``TreeWrapper`` node.
-        """
         return self.add(Pretty(obj), **kwargs)
 
     def add_syntax(
@@ -269,27 +230,9 @@ class TreeWrapper(Tree):
         theme: str = "monokai",
         **kwargs,
     ) -> "TreeWrapper":
-        """Add a child node containing syntax‑highlighted *code*.
-
-        Parameters
-        ----------
-        code: str
-            The source code to highlight.
-        lexer: str
-            Language identifier understood by ``rich.syntax.Syntax``.
-        theme: str, optional
-            Theme name for colourisation (default ``"monokai"``).
-        """
         return self.add(Syntax(code, lexer, theme=theme), **kwargs)
 
     def add_json_keys_sections(self, json_str: str, **kwargs) -> "TreeWrapper":
-        """Parse *json_str* and add its contents to the tree.
-
-        On parsing failure a red error message and the raw content are added.
-        On success each top‑level ``key: value`` pair is added as a child node
-        where the key is rendered in bold markup and the value is added as a
-        plain text child.
-        """
         try:
             obj = json.loads(json_str)
         except json.JSONDecodeError:
