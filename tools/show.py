@@ -24,6 +24,8 @@ from langgraph.types import Command
 console = rich.console.Console()
 
 def show_messages(messages):
+    # first pass at showing messages (pre-streaming)
+    # this is replaced by stream_messages() below which is way more useful (i.e. streaming)
     for m in messages:
         if isinstance(m, HumanMessage):
             console.print(f'[bold slate_blue1]Human[/]', end="")
