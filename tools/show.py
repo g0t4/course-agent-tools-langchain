@@ -264,7 +264,6 @@ async def stream_messages(
     def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
         name = message.name
         id = message.tool_call_id
-        show_id = ({id})
         child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message, child)
