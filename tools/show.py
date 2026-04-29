@@ -90,14 +90,14 @@ def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
             tree.add_no_markup("\n".join(lines[:5]) + "\n...")
         else:
             tree.add_no_markup(content)
-    else:
-        tree.add(Pretty(content))  # pretty spans multiple lines, is indented, looks very nice
+        else:
+            tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
 
 def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
     content = message.content
     if not isinstance(content, str):
         tree.add('[red]run_command message.content should be a string, but is not:[/]')  # Note: Rich parses markup in the string passed to tree.add, use Text() to block
-        tree.add(Pretty(content))
+        tree.add_pretty(content)
         return
 
     try:
@@ -176,15 +176,15 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
             if args:
                 if name.startswith("run_python"):
                     code = args.get("code", "")
-                    approval_node.add(Syntax(code, "python"))
+                    approval_node.add_syntax(code, "python")
                 elif name.startswith("run_command"):
                     commandline = args.get("commandline", "")
-                    approval_node.add(Syntax(commandline, "bash"))
+                    approval_node.add_syntax(commandline, "bash")
                 elif name == "apply_patch":
                     patch = args.get("patch", "")
-                    approval_node.add(Syntax(patch, "diff"))
+                    approval_node.add_syntax(patch, "diff")
                 else:
-                    approval_node.add(Pretty(args))
+                    approval_node.add_pretty(args)
             approval_node.add(f"[italic]{allowed}[/]")
             approval_node.blank_line()
 
@@ -255,6 +255,38 @@ class TreeWrapper(Tree):
         """
         return self.add(no_markup(text), **kwargs)
 
+    # -----------------------------------------------------------------
+    # Additional convenience helpers
+    # -----------------------------------------------------------------
+    def add_pretty(self, obj: Any, **kwargs) -> "TreeWrapper":
+        """Add a child node that pretty‑prints *obj* using ``rich.pretty.Pretty``.
+
+        This mirrors the existing pattern ``tree.add(Pretty(obj))`` but keeps the
+        call site succinct and returns the newly created ``TreeWrapper`` node.
+        """
+        return self.add(Pretty(obj), **kwargs)
+
+    def add_syntax(
+        self,
+        code: str,
+        lexer: str,
+        *,
+        theme: str = "monokai",
+        **kwargs,
+    ) -> "TreeWrapper":
+        """Add a child node containing syntax‑highlighted *code*.
+
+        Parameters
+        ----------
+        code: str
+            The source code to highlight.
+        lexer: str
+            Language identifier understood by ``rich.syntax.Syntax``.
+        theme: str, optional
+            Theme name for colourisation (default ``"monokai"``).
+        """
+        return self.add(Syntax(code, lexer, theme=theme), **kwargs)
+
 async def stream_messages(
     agent: Runnable,
     input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
@@ -307,7 +339,7 @@ async def stream_messages(
                 tool_tree = child.add(f"[bold]{name}[/] ({id})")
                 args = call.get("args", "")
                 if args:
-                    tool_tree.add(Pretty(args))
+            tool_tree.add_pretty(args)
                 tool_tree.blank_line()
 
     def _dict_to_message(message: dict) -> BaseMessage:
@@ -339,7 +371,7 @@ async def stream_messages(
         else:
             # do not raise b/c I use show_message for several scenarios beyond just initial messages... killing mid trace would not be fun
             branch = tree.add(f"[red]Unsupported message type: {type(message).__name__}[/]")
-            branch.add(Pretty(message))
+            branch.add_pretty(message)
             branch.blank_line()
 
     def on_tool_start(event: StreamEvent, tree: "TreeWrapper"):
@@ -355,13 +387,13 @@ async def stream_messages(
         assert isinstance(args, dict)
         if tool_name.startswith("run_python"):
             code = args.get("code", "")
-            node.add(Syntax(code, "python"))
+            node.add_syntax(code, "python")
         elif tool_name.startswith("run_command"):
             commandline = args.get("commandline", "")
-            node.add(Syntax(commandline, "bash"))
+            node.add_syntax(commandline, "bash")
         elif tool_name == "apply_patch":
             patch = args.get("patch", "")
-            node.add(Syntax(patch, "diff"))
+            node.add_syntax(patch, "diff")
         # else: FYI no reason to dump JSON again
         node.blank_line()
 
@@ -376,7 +408,7 @@ async def stream_messages(
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
             # i.e. update files modified (tmp file creation by subagent)
             tree.add("[red bold] TODO SHOW ANYTHING for on_tool_end when output is not just a ToolMessage?")
-            tree.add(Pretty(output))
+            tree.add_pretty(output)
 
     def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
         # streaming chunks so we can see response as it is generated
@@ -428,7 +460,7 @@ async def stream_messages(
 
             args = call.get("args", "")
             if args:
-                tool_tree.add(Pretty(args))
+                    tool_tree.add_pretty(args)
                 # FYI until you receive the full json string, the value won't be valid json... so don't try to parse it
                 #  for now leave tool specific argument formatters to the Calling tool in on_tool_start... otherwise you could show raw text until parses and then flip views to tool formatter but that might be jarring
 
@@ -438,7 +470,7 @@ async def stream_messages(
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
-        tree.add(Pretty(event))
+            tree.add_pretty(event)
 
     def show_input_messages(tree: "TreeWrapper"):
         nonlocal input
