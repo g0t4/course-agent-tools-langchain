@@ -147,7 +147,7 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
     for interrupt in __interrupt__:
         node = tree.add_markup("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
         node.blank_line()
-        # node.add(Pretty(interrupt)) # dump interrupt object (like above)
+        # node.add_pretty(interrupt) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
         review_configs = interrupt.value.get("review_configs", [])
         assert len(actions) == len(review_configs)
@@ -159,7 +159,7 @@ def show_pending_approvals(event: StreamEvent, tree: "TreeWrapper"):
             #
             action_name = config.get('action_name')
             allowed = ', '.join(config.get('allowed_decisions', []))
-            approval_node = node.add(f"{idx}. [bold]{name}[/]")
+            approval_node = node.add_markup(f"{idx}. [bold]{name}[/]")
             if args:
                 if name.startswith("run_python"):
                     code = args.get("code", "")
@@ -396,7 +396,7 @@ async def stream_messages(
         # if not any(state.accumulated.content_blocks):
         #     return
 
-        # node.add(Pretty(state.accumulated)) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
+        # node.add_pretty(state.accumulated) # actually looks really cool given the accumulated structure is preserved as chunks of it arrive and it fills out!
 
         message = state.accumulated
 
