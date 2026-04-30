@@ -498,7 +498,13 @@ async def stream_messages(
     with Live(
             root,
             refresh_per_second=8,
-            vertical_overflow="visible",  # default ellipsis (hides)
+            # vertical_overflow="visible",
+            # FYI do not use vertical_overflow="visible" for lots of lines of output as history will be a mess (when scrollback in neovim buffer)
+            #   disabling this seems to fix the issue with scrollback messed up
+            #   check w/ HITL and search for top level repeats:
+            #      /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
+            #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
+            # TODO is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
     ) as live:
         show_initial_messages(root)
 
