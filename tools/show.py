@@ -136,13 +136,13 @@ def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
             approval_node = node.add_markup(f"{idx}. [bold]{name}[/]")
             if args:
                 if name.startswith("run_python"):
-                    code = args.get("code", "")
+                    code = args.get("code")
                     approval_node.add_syntax(code, "python")
                 elif name.startswith("run_command"):
-                    commandline = args.get("commandline", "")
+                    commandline = args.get("commandline")
                     approval_node.add_syntax(commandline, "bash")
                 elif name == "apply_patch":
-                    patch = args.get("patch", "")
+                    patch = args.get("patch")
                     approval_node.add_syntax(patch, "diff")
                 else:
                     approval_node.add_pretty(args)
@@ -292,7 +292,7 @@ async def stream_messages(
         try:
             tool_name = event["name"]
             data = event.get("data")
-            args = data.get("input")
+            args = data.get("input", {})
 
             # AFAICT no tool_call_id available in on_tool_start
             # - show.show_tools() => rich.inspect(deepagents.middleware.filesystem.LsSchema)
@@ -307,32 +307,32 @@ async def stream_messages(
 
             # * title (first are tools that have custom titles)
             if tool_name == "task":
-                subagent_type = args.get("subagent_type", "")
+                subagent_type = args.get("subagent_type")
                 # PRN consider new color to standout (shade of blue to keep consistent?)
                 node = tree.add_markup(f"{color}Delegating {tool_name} to {subagent_type}")
                 # description arg => will show in HumanMessage below so no need to repeate it here
             elif tool_name == "ls":
-                path = args.get("path", "")
+                path = args.get("path")
                 node = tree.add_markup(f"{color}{tool_name} {path}")
             elif tool_name == "glob":
-                pattern = args.get("pattern", "")
-                path = args.get("path", "")
+                pattern = args.get("pattern")
+                path = args.get("path")
                 node = tree.add_markup(f"{color}{tool_name} {pattern} (in {path})")
             elif tool_name == "write_file":
-                file_path = args.get("file_path", "")
+                file_path = args.get("file_path")
                 node = tree.add_markup(f"{color}{tool_name} {file_path}")
-                content = args.get("content", "")
+                content = args.get("content")
                 ext = os.path.splitext(file_path)[1].lstrip(".")
                 node.add_syntax(content, ext)
             elif tool_name == "read_file":
                 # PRN args offset, limit
-                file_path = args.get("file_path", "")
+                file_path = args.get("file_path")
                 node = tree.add_markup(f"{color}{tool_name} {file_path}")
             elif tool_name == "edit_file":
-                file_path = args.get("file_path", "")
+                file_path = args.get("file_path")
                 node = tree.add_markup(f"{color}{tool_name} {file_path}")
-                old = args.get("old_string", "")
-                new = args.get("new_string", "")
+                old = args.get("old_string")
+                new = args.get("new_string")
                 # build diff (prepend -/+ to old/new respectively)
                 diff = [f"-{line}" for line in old.splitlines()]
                 diff += [f"+{line}" for line in new.splitlines()]
@@ -351,16 +351,16 @@ async def stream_messages(
             # * prettify select arguments (basically for things that use the generic title)
             assert isinstance(args, dict)
             if tool_name.startswith("run_python"):
-                code = args.get("code", "")
+                code = args.get("code")
                 node.add_syntax(code, "python")
             elif tool_name.startswith("run_command"):
-                commandline = args.get("commandline", "")
+                commandline = args.get("commandline")
                 node.add_syntax(commandline, "bash")
             elif tool_name == "execute":
-                command = args.get("command", "")
+                command = args.get("command")
                 node.add_syntax(command, "bash")
             elif tool_name == "apply_patch":
-                patch = args.get("patch", "")
+                patch = args.get("patch")
                 node.add_syntax(patch, "diff")
             # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
         except Exception as e:
@@ -428,7 +428,7 @@ async def stream_messages(
             content_node.blank_line()
         if message.tool_calls:
             for call in message.tool_calls:
-                name = call.get("name", "")
+                name = call.get("name")
                 id = call.get("id", "")
                 tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
                 args = call.get("args", "")
