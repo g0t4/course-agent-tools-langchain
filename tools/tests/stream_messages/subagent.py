@@ -18,7 +18,7 @@ model = ChatLlamaServer(
 )
 
 messages = [
-    HumanMessage("What is my hostname?"), # Qwen is reliably asking subagent to run hostname command first (that fails, so the subagent returns empty handed) then qwen reads file to get the hostname (WHEN using FilesystemBackend(virtual_mode=False))
+    HumanMessage("What is my hostname?"),  # Qwen is reliably asking subagent to run hostname command first (that fails, so the subagent returns empty handed) then qwen reads file to get the hostname (WHEN using FilesystemBackend(virtual_mode=False))
 ]
 
 agent = create_deep_agent(
@@ -36,7 +36,11 @@ agent = create_deep_agent(
 
     # FYI give local shell for a quick answer (minimal thread) w/o failures - just be CAREFUL
     #   add HumanInTheLoopMiddleware to review tool calls
-    backend=LocalShellBackend(virtual_mode=False), # same as FilesystemBackend + execute commands
+    backend=LocalShellBackend(virtual_mode=False),  # same as FilesystemBackend + execute commands
 )
 
-events = await stream_messages(agent, messages) # pyright: ignore
+events = await stream_messages( # pyright: ignore
+    agent,
+    messages,
+    # dump_events=True,
+)  

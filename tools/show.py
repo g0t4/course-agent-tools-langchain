@@ -14,7 +14,7 @@ import json
 import sys
 import asyncio
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import Any, Sequence, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -286,7 +286,7 @@ async def stream_messages(
             branch.add_pretty(message)
             branch.blank_line()
 
-    def on_tool_start(event: StreamEvent, tree: TreeWrapper):
+    def on_tool_start(event: StreamEvent, tree: TreeWrapper) -> TreeWrapper:
         try:
             tool_name = event["name"]
             data: EventData = event.get("data")
@@ -368,6 +368,7 @@ async def stream_messages(
             node = tree.add_error("Failed to build Calling tool summary", error)
 
         node.blank_line()
+        return node # return only for register_node, see notes in on_too_start handler, I am skeptical this is ever used.
 
     def _display_tool_message_content(message: ToolMessage, tree: TreeWrapper):
         content = message.content
@@ -490,6 +491,14 @@ async def stream_messages(
     root = TreeWrapper("agent", hide_root=True)
     root.TREE_GUIDES = [("    ", "    ", "    ", "    ")]
 
+    # Mapping from a runnable's ``run_id`` to the Tree node that represents it.
+    # This enables events from parallel runnables to locate the correct parent node and update it
+    trees_by_run_id: dict[str, TreeWrapper] = {}
+    def register_node(run_id: str, node: TreeWrapper):
+        """ explicit method purely for readability """
+        trees_by_run_id[run_id] = node
+        return node
+
     with Live(
             root,
             auto_refresh=False,
@@ -510,7 +519,6 @@ async def stream_messages(
     ) as live:
         show_initial_messages(root, live)
 
-        tree = root
         events: list[StreamEvent] = []
         streaming_state = StreamingChunksState()
         event: StreamEvent
@@ -520,16 +528,30 @@ async def stream_messages(
             # - runnable types: chain, chat_model, tool
             events.append(event)
 
-            run_id = event.get("run_id")
-            # FYI empty parent_ids => implies root is parent
-            parent_ids = event.get("parent_ids")
+            if only_dump_events:
+                # FYI using root b/c no register/nest logic executes
+                dump_all_events_except_streaming_tokens_for_debugging(event, root)
+                continue
+
+            # * find parent_node
+            # FYI throw if no run_id/parent_ids, I want it to be a show stopper so I can see if/when it ever happens
+            run_id: str = event.get("run_id")
+            parent_ids: Sequence[str] = event.get("parent_ids")
+            if any(parent_ids):
+                parent_id = parent_ids[-1]
+                parent_node = trees_by_run_id.get(parent_id)
+            else:
+                parent_node = root
+
+            if parent_node is None:
+                root.add_markup("[ERROR: parent node is missing]") \
+                    .add_pretty(event) # show event to troubleshoot
+                # must abort entirely, not continue... do not catch this error
+                raise RuntimeError("Parent node not found, this shouldn't ever happen, aborting...")
 
             try:
-                if only_dump_events:
-                    dump_all_events_except_streaming_tokens_for_debugging(event, tree)
-                    continue
                 if dump_events:
-                    dump_all_events_except_streaming_tokens_for_debugging(event, tree)
+                    dump_all_events_except_streaming_tokens_for_debugging(event, parent_node)
 
                 event_type = event["event"]
                 if event_type == "on_chain_start":
@@ -542,28 +564,61 @@ async def stream_messages(
                     #   PRN track who the parent is (via parent IDs.... build a mapping table of parent ID => node and use last parent ID to get node to attach to...)
                     #    and then don't use a global tree variable?
                     #    rich's live view will work with this... but then you lose timing correlation (where later stuff came later)...
+                    #
+                    # parent_ids so far are always a chain's run_id (makes sense, each runnable invocation is "wrapped" w/ a chain)
+                    #   IOTW nesting is all? organized by chains (b/c every runnable invocation is wrapped in a dedicated chain)
+                    #   only leaf nodes contain non-chain events
+                    #   BTW on_chain_[start|stream|end] share the same run_id
                     name = event.get("name")
-                    tree = tree.add_no_markup(f"[chain start] {name}")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
+                    chain_start_node = parent_node.add_no_markup(f"[chain start] {name}")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
+                    if run_id is None:
+                        raise RuntimeError("Missing run_id for chain start event")
+                    register_node(run_id, chain_start_node)
                 elif event_type == "on_chain_end":
-                    name = event.get("name")
-                    tree.add_no_markup(f"[chain end] {name}")
-                    tree = tree.parent
-                    assert tree is not None  # TODO remove assertion later when I don't need to track the current "parent" which is wrong once paralellism is used
+                    chain_start_node = trees_by_run_id.get(run_id)
+                    assert chain_start_node is not None
+                    chain_start_node.add_no_markup(f"[chain end] {event.get("name")}")
                 elif event_type == "on_chain_stream":
-                    show_approval_interrupts(event, tree)
+                    # TODO remove [chain stream] log after done testing lookup
+                    chain_start_node = trees_by_run_id.get(run_id)
+                    assert chain_start_node is not None
+                    chain_start_node.add_no_markup(f"[chain stream] {event.get("name")}")
+                    # PRN show what was streamed? (gonna be a repeat of something nested)
+                    #
+                    show_approval_interrupts(event, parent_node)
                 elif event_type == "on_tool_start":
-                    on_tool_start(event, tree)
+                    tool_start_node = on_tool_start(event, parent_node)
+                    # FYI subagents will result in chain events nested under tool call!
+                    #   test with tests/stream_messages/subagents.py  (chain => tool(task) => chain => execute)
+                    register_node(run_id, tool_start_node)
                 elif event_type == "on_tool_end":
-                    on_tool_end(event, tree)
+                    # PRN nest tool_end under the tool_start_node?
+                    tool_start_node = trees_by_run_id.get(run_id)
+                    assert tool_start_node is not None # start called before end
+                    # where to position end node (ToolMessage)?
+                    # on_tool_end(event, parent_node) # sibling of tool_start "Calling..." node?
+                    on_tool_end(event, tool_start_node) # or, nested under "Calling..." node?
                 elif event_type == "on_chat_model_start":
+                    # PRN register_node(run_id, chat_model_start_node)...
+                    #    First, register it in on_chat_model_end once fully constructed (streaming)?
+                    #      b/c AFAICT nothing else would be nested under the chat_model completion runnable, not AFAICT
+                    #        at least not until the completion is done?
+                    #        other runnables can trigger as a result but they'd be wrapped in a sibling chain next to this chat_model runnable invocation
+                    #      other stuff can happen in parallel but that would be under a diff parent_node
+                    #    OR, register it in on_chat_model_stream? 
+                    #    OR, register it here if something is nested before first on_chat_model_stream call
+                    #      would require reworking how streaming updates the node:
+                    #      - create node here in _start
+                    #      - pass via state
+                    #      - modify streaming code to update the same node, not replace (remove/add) like it does now
                     streaming_state.reset()
                 elif event_type == "on_chat_model_stream":
-                    on_chat_model_stream(event, streaming_state, tree)
+                    on_chat_model_stream(event, streaming_state, parent_node)
             except Exception as error:  # pragma: no cover
                 # it is largely ok to continue because we are just displaying results
                 #  that said, tree hierarchy might be messed up with an exception if parent tree is never created...
-                if tree:
-                    tree.add_error("Error processing event", error)
+                if root:
+                    root.add_error("Error processing event", error)
                 else:
                     raise RuntimeError("No tree to log error to") from error
 
