@@ -197,9 +197,9 @@ class TreeWrapper(Tree):
     def add_sections_from_json_keys(self, json_str: str, **kwargs) -> "TreeWrapper":
         try:
             obj = json.loads(json_str)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as error:
             # Show the error and raw content in the tree
-            self.add_markup("[red]failed to load JSON result:[/]")\
+            self.add_error("failed to load JSON result", error) \
                 .add_no_markup(json_str)
             return self
 
@@ -217,15 +217,15 @@ class TreeWrapper(Tree):
         if self.parent:
             try:
                 self.parent.children.remove(self)
-            except ValueError:
-                pass
+            except ValueError as error:
+                # ? do I want to see this failure, ever?
+                self.add_error("unexpected, failed to remove self", error)
             self.parent = None
         return self
 
     def add_error(self, message: str, error: Exception) -> "TreeWrapper":
         node = self.add_markup(f"[red bold]{message}[/]")
         node.add_pretty(error)
-        node.blank_line()
         return node
 
 @dataclass
@@ -370,11 +370,11 @@ async def stream_messages(
                 patch = args.get("patch")
                 node.add_syntax(patch, "diff")
             # do not show other tools/args that I don't have custom formatter for b/c they already show from AIMessage
-        except Exception as e:
+        except Exception as error:
             # lots of novel logic... would be terrible to trip this at random and kill a trace
             #   (i.e. b/c a tool argument name is wrong)
             #   or maybe issues with unsupported language and Syntax
-            node = tree.add_error("Failed to build Calling tool summary", e)
+            node = tree.add_error("Failed to build Calling tool summary", error)
 
         node.blank_line()
 
