@@ -544,9 +544,13 @@ async def stream_messages(
                     streaming_state.reset()
                 elif event_type == "on_chat_model_stream":
                     on_chat_model_stream(event, streaming_state, tree)
-            except Exception as exc:  # pragma: no cover
-                # Capture any unexpected error while handling an event so the visualization can continue.
-                tree.add_error("Error processing event", exc)
+            except Exception as error:  # pragma: no cover
+                # it is largely ok to continue because we are just displaying results
+                #  that said, tree hierarchy might be messed up with an exception if parent tree is never created...
+                if tree:
+                    tree.add_error("Error processing event", error)
+                else:
+                    raise RuntimeError("No tree to log error to") from error
 
     return events
 
