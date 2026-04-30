@@ -514,34 +514,39 @@ async def stream_messages(
             if dump_events:
                 dump_all_events_except_streaming_tokens_for_debugging(event, tree)
 
-            event_type = event["event"]
-            if event_type == "on_chain_start":
-                # FYI nesting is somewhat misleading w/ parallel execution => i.e. parallel tool calls... also will be true for other parallel branches
-                #   for now just mention parallelism is limit on this visualizer... and I am NOT ADDING anything for parallelism!
-                #     worst case right now is pretty much just parallel tool calls (and mostly simple ones, not parallel agents though I could trigger that too)
-                #     just mention that would be misleading!
-                #     FYI showing name obviates some of the confusion on the [chain_*] log
-                #   GOOD enough for now IMO... just mention limits of custom visualization (and segue then to LangSmith)!
-                #   PRN track who the parent is (via parent IDs.... build a mapping table of parent ID => node and use last parent ID to get node to attach to...)
-                #    and then don't use a global tree variable?
-                #    rich's live view will work with this... but then you lose timing correlation (where later stuff came later)...
-                name = event.get("name")
-                tree = tree.add_no_markup(f"[chain start] {name}")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
-            elif event_type == "on_chain_end":
-                name = event.get("name")
-                tree.add_no_markup(f"[chain end] {name}")
-                tree = tree.parent
-                assert tree is not None  # TODO remove assertion later when I don't need to track the current "parent" which is wrong once paralellism is used
-            elif event_type == "on_chain_stream":
-                show_approval_interrupts(event, tree)
-            elif event_type == "on_tool_start":
-                on_tool_start(event, tree)
-            elif event_type == "on_tool_end":
-                on_tool_end(event, tree)
-            elif event_type == "on_chat_model_start":
-                streaming_state.reset()
-            elif event_type == "on_chat_model_stream":
-                on_chat_model_stream(event, streaming_state, tree)
+            # Safely process each event without aborting the whole trace.
+            try:
+                event_type = event["event"]
+                if event_type == "on_chain_start":
+                    # FYI nesting is somewhat misleading w/ parallel execution => i.e. parallel tool calls... also will be true for other parallel branches
+                    #   for now just mention parallelism is limit on this visualizer... and I am NOT ADDING anything for parallelism!
+                    #     worst case right now is pretty much just parallel tool calls (and mostly simple ones, not parallel agents though I could trigger that too)
+                    #     just mention that would be misleading!
+                    #     FYI showing name obviates some of the confusion on the [chain_*] log
+                    #   GOOD enough for now IMO... just mention limits of custom visualization (and segue then to LangSmith)!
+                    #   PRN track who the parent is (via parent IDs.... build a mapping table of parent ID => node and use last parent ID to get node to attach to...)
+                    #    and then don't use a global tree variable?
+                    #    rich's live view will work with this... but then you lose timing correlation (where later stuff came later)...
+                    name = event.get("name")
+                    tree = tree.add_no_markup(f"[chain start] {name}")  # this label makes it very easy to see in my hierarchy where the chain starts/ends!
+                elif event_type == "on_chain_end":
+                    name = event.get("name")
+                    tree.add_no_markup(f"[chain end] {name}")
+                    tree = tree.parent
+                    assert tree is not None  # TODO remove assertion later when I don't need to track the current "parent" which is wrong once paralellism is used
+                elif event_type == "on_chain_stream":
+                    show_approval_interrupts(event, tree)
+                elif event_type == "on_tool_start":
+                    on_tool_start(event, tree)
+                elif event_type == "on_tool_end":
+                    on_tool_end(event, tree)
+                elif event_type == "on_chat_model_start":
+                    streaming_state.reset()
+                elif event_type == "on_chat_model_stream":
+                    on_chat_model_stream(event, streaming_state, tree)
+            except Exception as exc:  # pragma: no cover
+                # Capture any unexpected error while handling an event so the visualization can continue.
+                tree.add_error("Error processing event", exc)
 
     return events
 
