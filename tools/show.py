@@ -461,7 +461,7 @@ async def stream_messages(
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
-            tree.add_pretty(event)
+        tree.add_pretty(event)
 
     def show_initial_messages(tree: TreeWrapper):
         nonlocal input
