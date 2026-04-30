@@ -65,16 +65,6 @@ def show_messages(messages):
         else:
             console.print(f"unexpected message type: {m}")
 
-def clear_screen():
-    try:
-        from IPython import get_ipython
-        ip = get_ipython()
-        if ip:
-            ip.run_line_magic("clear", "")
-    except Exception:
-        # Silently ignore if IPython is not available or any error occurs.
-        pass
-
 def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
     # trigger HITL approvals
     #   use gptoss for one at a time
@@ -468,10 +458,12 @@ async def stream_messages(
             return
         tree.add_pretty(event)
 
-    def show_initial_messages(tree: TreeWrapper):
+    def show_initial_messages(tree: TreeWrapper, live: Live):
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
+            # also avoids clearing screen when resuming after interrupt
+            # - currently only use Command to resume after interrupt (could add logic to filter on just resume payload if need to clear with other Command inputs)
             return
 
         if isinstance(input, dict) and "messages" in input:
@@ -483,7 +475,10 @@ async def stream_messages(
                 _show_message(msg, tree)
             return
 
-        clear_screen()
+        live.console.clear()  # clear screen so thread starts from top of screen
+        # FYI only clear when initial messages sent (not on follow up decision in response to an interrupt)
+        #   that way you can see full thread still when resuming after interrupts
+
         initial_messages = input
         # convenience to wrap in messages dict... b/c that's what astream_events/invoke/etc expects
         # I added this so you can pass initial_messages instead of always wrapping it
@@ -506,7 +501,7 @@ async def stream_messages(
             #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
             # TODO is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
     ) as live:
-        show_initial_messages(root)
+        show_initial_messages(root, live)
 
         tree = root
         events: list[StreamEvent] = []
