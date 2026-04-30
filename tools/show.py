@@ -492,19 +492,23 @@ async def stream_messages(
 
     with Live(
             root,
-            refresh_per_second=8,
-            # vertical_overflow="visible",
+            auto_refresh=False,
+            # refresh_per_second=8,
+            vertical_overflow="visible",
             # FYI do not use vertical_overflow="visible" for lots of lines of output as history will be a mess (when scrollback in neovim buffer)
-            #   disabling this seems to fix the issue with scrollback messed up
+            #   disabling vertical_overflow fixes issue with scrollback messed up
             #   check w/ HITL and search for top level repeats:
             #      /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
             #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
             #        - check 6/6 matches, if >6 => messed up
+            #   auto_refresh=False also fixes visual_overflow (tree draws once on exit)
+            #   - honestly this is perfectly fine for LONG traces anyways in which case you won't be reviewing on the fly! will wait to be done too
+            #   - TODO does manually refershing fix issues with scrollback and vertical overflow?
+            #     - ? any combo of rich.console.clear_live() and refresh that works?
+            #
             #
             # TODO is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
             #
-            # TODO does manually deciding when to refersh fix issues with scrollback and vertical overflow?
-            # -  ? any combo of rich.console.clear_live() and refresh that works?
     ) as live:
         show_initial_messages(root, live)
 
