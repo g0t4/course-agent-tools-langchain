@@ -30,13 +30,13 @@ agent = create_deep_agent(
     # * be careful with backends (provides filesystem access and/or command execution)!
     # FYI default `backend=StateBackend()` is ephemeral in state (a virtual fs, not the real one)
     # docs to pick: https://docs.langchain.com/oss/python/deepagents/backends
-    backend=FilesystemBackend(root_dir="/usr", virtual_mode=True),
+    # backend=FilesystemBackend(root_dir="/usr", virtual_mode=True),
     #
     # backend=FilesystemBackend(virtual_mode=False), # virtual_mode=False ==> everything (no commands)
 
     # FYI give local shell for a quick answer (minimal thread) w/o failures - just be CAREFUL
     #   add HumanInTheLoopMiddleware to review tool calls
-    # backend=LocalShellBackend(virtual_mode=False), # same as FilesystemBackend + execute commands
+    backend=LocalShellBackend(virtual_mode=False), # same as FilesystemBackend + execute commands
 )
 
 events = await stream_messages(agent, messages) # pyright: ignore
