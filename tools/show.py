@@ -18,13 +18,14 @@ from typing import Any, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
-from langchain_core.runnables.schema import StreamEvent
+from langchain_core.runnables.schema import EventData, StreamEvent
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
 console = rich.console.Console()
 
 def show_messages(messages):
+    # *legacy* (initial helper to show messages... not related to stream_messages() below)
     # first pass at showing messages (pre-streaming)
     # this is replaced by stream_messages() below which is way more useful (i.e. streaming)
     for m in messages:
@@ -107,7 +108,7 @@ def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
     #     },
     #     id='8784b505500ed4b71d24ba3105d43dfc'
     # )
-    data = event.get("data")
+    data: EventData = event.get("data")
     chunk = data.get("chunk")
     if not chunk:
         return
@@ -246,12 +247,12 @@ async def stream_messages(
         nonlocal message_count
         message_count += 1
 
-    def show_system_message(message: SystemMessage, tree: "TreeWrapper"):
+    def show_system_message(message: SystemMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on gold1]SystemMessage")
         child.add_no_markup(message.content)
         child.blank_line()
 
-    def show_human_message(message: HumanMessage, tree: "TreeWrapper"):
+    def show_human_message(message: HumanMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
         child.add_no_markup(message.content)
         child.blank_line()
@@ -270,7 +271,7 @@ async def stream_messages(
             return SystemMessage(**message)
         raise ValueError(f"Unsupported role: {role}")
 
-    def _show_message(message, tree: "TreeWrapper"):
+    def _show_message(message, tree: TreeWrapper):
         if isinstance(message, dict):
             message = _dict_to_message(message)
 
@@ -288,10 +289,10 @@ async def stream_messages(
             branch.add_pretty(message)
             branch.blank_line()
 
-    def on_tool_start(event: StreamEvent, tree: "TreeWrapper"):
+    def on_tool_start(event: StreamEvent, tree: TreeWrapper):
         try:
             tool_name = event["name"]
-            data = event.get("data")
+            data: EventData = event.get("data")
             args = data.get("input", {})
 
             # AFAICT no tool_call_id available in on_tool_start
@@ -373,7 +374,7 @@ async def stream_messages(
 
         node.blank_line()
 
-    def _display_tool_message_content(message: ToolMessage, tree: "TreeWrapper"):
+    def _display_tool_message_content(message: ToolMessage, tree: TreeWrapper):
         content = message.content
         if message.name == "run_command":
             _display_tool_message_for_run_command(message, tree)
@@ -388,14 +389,14 @@ async def stream_messages(
         else:
             tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
 
-    def _display_tool_message_for_run_command(message: ToolMessage, tree: "TreeWrapper"):
+    def _display_tool_message_for_run_command(message: ToolMessage, tree: TreeWrapper):
         if not isinstance(message.content, str):
             tree.add_markup('[red]run_command message.content should be a string, but is not:[/]')
             tree.add_pretty(message.content)
             return
         tree.add_sections_from_json_keys(message.content)
 
-    def show_tool_message(message: ToolMessage, tree: "TreeWrapper"):
+    def show_tool_message(message: ToolMessage, tree: TreeWrapper):
         name = message.name
         id = message.tool_call_id
         child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
@@ -403,9 +404,9 @@ async def stream_messages(
         _display_tool_message_content(message, child)
         child.blank_line()
 
-    def on_tool_end(event: StreamEvent, tree: "TreeWrapper"):
+    def on_tool_end(event: StreamEvent, tree: TreeWrapper):
         increment_message_count()
-        data = event.get("data")
+        data: EventData = event.get("data")
         output = data.get("output")
         if isinstance(output, ToolMessage):
             show_tool_message(output, tree)
@@ -415,7 +416,7 @@ async def stream_messages(
             # tree.add_markup("[red bold] TODO SHOW ANYTHING else for on_tool_end when output is not just a ToolMessage?")
             # i.e. channels modified? update files modified (tmp file creation by subagent)
 
-    def show_ai_message(message: AIMessage, tree: "TreeWrapper"):
+    def show_ai_message(message: AIMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
@@ -437,7 +438,7 @@ async def stream_messages(
                 tool_tree.blank_line()
         return child
 
-    def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: "TreeWrapper"):
+    def on_chat_model_stream(event: StreamEvent, state: StreamingChunksState, tree: TreeWrapper):
         # streaming chunks so we can see response as it is generated
         chunk = event.get("data").get("chunk")
         assert isinstance(chunk, AIMessageChunk)
@@ -456,13 +457,13 @@ async def stream_messages(
         state.node = show_ai_message(state.accumulated, tree)
         # state.node.add_pretty(state.accumulated) # DEBUGGING: fixed structure fills out as each chunk arrives (looks cool)
 
-    def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: "TreeWrapper"):
+    def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: TreeWrapper):
         event_type = event["event"]
         if event_type in {"on_chat_model_stream"}:
             return
             tree.add_pretty(event)
 
-    def show_initial_messages(tree: "TreeWrapper"):
+    def show_initial_messages(tree: TreeWrapper):
         nonlocal input
         if isinstance(input, Command) or input is None:
             # don't show command inputs, that's already obvious in the calling code
@@ -526,6 +527,7 @@ async def stream_messages(
                 name = event.get("name")
                 tree.add_no_markup(f"[chain end] {name}")
                 tree = tree.parent
+                assert tree is not None  # TODO remove assertion later when I don't need to track the current "parent" which is wrong once paralellism is used
             elif event_type == "on_chain_stream":
                 show_approval_interrupts(event, tree)
             elif event_type == "on_tool_start":
