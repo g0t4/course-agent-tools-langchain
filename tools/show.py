@@ -222,6 +222,19 @@ class TreeWrapper(Tree):
             self.parent = None
         return self
 
+    def add_error(self, message: str, error: Exception) -> "TreeWrapper":
+        """Add an error node with a red markup message and pretty‑printed exception.
+
+        This mirrors the ad‑hoc error handling previously scattered across the
+        codebase (e.g. in ``on_tool_start``). It creates a child node with the
+        provided *message* rendered in red, attaches the exception via
+        ``add_pretty`` and ensures a trailing blank line for visual separation.
+        """
+        node = self.add_markup(f"[red]{message}[/]")
+        node.add_pretty(error)
+        node.blank_line()
+        return node
+
 @dataclass
 class StreamingChunksState:
     node: TreeWrapper | None = None
@@ -368,9 +381,7 @@ async def stream_messages(
             # lots of novel logic... would be terrible to trip this at random and kill a trace
             #   (i.e. b/c a tool argument name is wrong)
             #   or maybe issues with unsupported language and Syntax
-            node = tree.add_markup(f"[red]Failed to build Calling tool summary:[/]")
-            node.add_pretty(e)
-            node.blank_line()
+            node = tree.add_error("Failed to build Calling tool summary:", e)
 
         node.blank_line()
 
