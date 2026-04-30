@@ -511,6 +511,10 @@ async def stream_messages(
             # - runnable types: chain, chat_model, tool
             events.append(event)
 
+            run_id = event.get("run_id")
+            # FYI empty parent_ids => implies root is parent
+            parent_ids = event.get("parent_ids")
+
             if dump_events:
                 dump_all_events_except_streaming_tokens_for_debugging(event, tree)
 
