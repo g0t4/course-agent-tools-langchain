@@ -499,7 +499,12 @@ async def stream_messages(
             #   check w/ HITL and search for top level repeats:
             #      /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
             #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
+            #        - check 6/6 matches, if >6 => messed up
+            #
             # TODO is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
+            #
+            # TODO does manually deciding when to refersh fix issues with scrollback and vertical overflow?
+            # -  ? any combo of rich.console.clear_live() and refresh that works?
     ) as live:
         show_initial_messages(root, live)
 
