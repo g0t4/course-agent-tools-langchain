@@ -501,13 +501,11 @@ async def stream_messages(
             #      /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
             #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
             #        - check 6/6 matches, if >6 => messed up
-            #   auto_refresh=False also fixes visual_overflow (tree draws once on exit)
-            #   - honestly this is perfectly fine for LONG traces anyways in which case you won't be reviewing on the fly! will wait to be done too
-            #   - TODO does manually refershing fix issues with scrollback and vertical overflow?
-            #     - ? any combo of rich.console.clear_live() and refresh that works?
-            #
-            #
-            # TODO is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
+            #   * auto_refresh=False also fixes visual_overflow (tree draws once on exit)
+            #     - honestly this is perfectly fine for LONG traces anyways in which case you won't be reviewing on the fly! will wait to be done too
+            #     - manual live.refresh() at end of event loop fixes vertical_overflow (so far no issues)
+            #     - ? does using rich.console.clear_live() help?
+            #   PRN is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
             #
     ) as live:
         show_initial_messages(root, live)
@@ -568,6 +566,8 @@ async def stream_messages(
                     tree.add_error("Error processing event", error)
                 else:
                     raise RuntimeError("No tree to log error to") from error
+
+            live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
 
     return events
 
