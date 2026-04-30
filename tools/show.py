@@ -243,6 +243,7 @@ async def stream_messages(
     input: Any | list[BaseMessage] | Command | None,  # Any: for {"messages": list[BaseMessage] }
     *,
     dump_events=False,
+    only_dump_events=False,
     config: RunnableConfig | None = None,
     **kwargs,
 ):
@@ -515,11 +516,13 @@ async def stream_messages(
             # FYI empty parent_ids => implies root is parent
             parent_ids = event.get("parent_ids")
 
-            if dump_events:
-                dump_all_events_except_streaming_tokens_for_debugging(event, tree)
-
-            # Safely process each event without aborting the whole trace.
             try:
+                if only_dump_events:
+                    dump_all_events_except_streaming_tokens_for_debugging(event, tree)
+                    continue
+                if dump_events:
+                    dump_all_events_except_streaming_tokens_for_debugging(event, tree)
+
                 event_type = event["event"]
                 if event_type == "on_chain_start":
                     # FYI nesting is somewhat misleading w/ parallel execution => i.e. parallel tool calls... also will be true for other parallel branches
