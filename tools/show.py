@@ -111,7 +111,7 @@ def show_approval_interrupts(event: StreamEvent, tree: "TreeWrapper"):
         return
 
     for interrupt in __interrupt__:
-        node = tree.add_markup("[bold gray0 on deep_pink2]APPROVAL NEEDED[/]")
+        node = tree.add_markup("[bold gray0 on deep_pink2] APPROVAL NEEDED [/]")
         node.blank_line()
         # node.add_pretty(interrupt) # dump interrupt object (like above)
         actions = interrupt.value.get("action_requests", [])
@@ -247,12 +247,12 @@ async def stream_messages(
         message_count += 1
 
     def show_system_message(message: SystemMessage, tree: TreeWrapper):
-        child = tree.add_markup(f"{message_count}. [bold gray0 on gold1]SystemMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on gold1] SystemMessage [/]")
         child.add_no_markup(message.content)
         child.blank_line()
 
     def show_human_message(message: HumanMessage, tree: TreeWrapper):
-        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]HumanMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] HumanMessage [/]")
         child.add_no_markup(message.content)
         child.blank_line()
 
@@ -397,7 +397,7 @@ async def stream_messages(
     def show_tool_message(message: ToolMessage, tree: TreeWrapper):
         name = message.name
         id = message.tool_call_id
-        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1]ToolMessage[/]: [bold]{name}[/] ({id})")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
         _display_tool_message_content(message, child)
         child.blank_line()
@@ -436,7 +436,7 @@ async def stream_messages(
         child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: TreeWrapper):
-        child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+        child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3] AIMessage [/]")
         reasoning = message.additional_kwargs.get("reasoning_content")
         if reasoning:
             reasoning_node = child.add_markup("[bold]reasoning:[/]")
