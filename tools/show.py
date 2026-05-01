@@ -577,12 +577,12 @@ async def stream_messages(
                 elif event_type == "on_chain_end":
                     chain_start_node = trees_by_run_id.get(run_id)
                     assert chain_start_node is not None
-                    chain_start_node.add_no_markup(f"[chain end] {event.get("name")}")
+                    # chain_start_node.add_no_markup(f"[chain end] {event.get("name")}")
                 elif event_type == "on_chain_stream":
                     # TODO remove [chain stream] log after done testing lookup
                     chain_start_node = trees_by_run_id.get(run_id)
                     assert chain_start_node is not None
-                    chain_start_node.add_no_markup(f"[chain stream] {event.get("name")}")
+                    # chain_start_node.add_no_markup(f"[chain stream] {event.get("name")}")
                     # PRN show what was streamed? (gonna be a repeat of something nested)
                     #
                     show_approval_interrupts(event, parent_node)
