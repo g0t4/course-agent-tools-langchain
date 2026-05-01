@@ -370,7 +370,7 @@ async def stream_messages(
             node = tree.add_error("Failed to build Calling tool summary", error)
 
         node.blank_line()
-        return node # return only for register_node, see notes in on_too_start handler, I am skeptical this is ever used.
+        return node  # return only for register_node, see notes in on_too_start handler, I am skeptical this is ever used.
 
     def _display_tool_message_content(message: ToolMessage, tree: TreeWrapper):
         content = message.content
@@ -596,10 +596,10 @@ async def stream_messages(
                 elif event_type == "on_tool_end":
                     # PRN nest tool_end under the tool_start_node?
                     tool_start_node = trees_by_run_id.get(run_id)
-                    assert tool_start_node is not None # start called before end
+                    assert tool_start_node is not None  # start called before end
                     # where to position end node (ToolMessage)?
                     # on_tool_end(event, parent_node) # sibling of tool_start "Calling..." node?
-                    on_tool_end(event, tool_start_node) # or, nested under "Calling..." node?
+                    on_tool_end(event, tool_start_node)  # or, nested under "Calling..." node?
                 elif event_type == "on_chat_model_start":
                     # PRN register_node(run_id, chat_model_start_node)...
                     #    First, register it in on_chat_model_end once fully constructed (streaming)?
@@ -607,7 +607,7 @@ async def stream_messages(
                     #        at least not until the completion is done?
                     #        other runnables can trigger as a result but they'd be wrapped in a sibling chain next to this chat_model runnable invocation
                     #      other stuff can happen in parallel but that would be under a diff parent_node
-                    #    OR, register it in on_chat_model_stream? 
+                    #    OR, register it in on_chat_model_stream?
                     #    OR, register it here if something is nested before first on_chat_model_stream call
                     #      would require reworking how streaming updates the node:
                     #      - create node here in _start
