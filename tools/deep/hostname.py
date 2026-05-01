@@ -27,6 +27,8 @@ agent = create_deep_agent(
     model=model,
 )
 
+# %% 
+
 events = await stream_messages(agent, messages) # pyright: ignore
 
 # %% 
