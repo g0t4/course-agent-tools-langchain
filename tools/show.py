@@ -418,7 +418,7 @@ async def stream_messages(
             # i.e. channels modified? update files modified (tmp file creation by subagent)
 
     def show_command(command: Command, tree: TreeWrapper):
-        child = tree.add_markup(f"[bold magenta]Command[/]")
+        child = tree.add_markup(f"[bold gray0 on magenta3] Command [/]")
         if command.update:
             messages = command.update.get("messages", [])
             for msg in messages:
