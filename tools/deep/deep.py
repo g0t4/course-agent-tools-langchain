@@ -2,16 +2,14 @@
 get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
 get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
-from typing import Type
+import show
+from show import stream_messages
+
 from langgraph.graph.state import RunnableConfig
-from langgraph.types import Command
-from pydantic import BaseModel, Field
 import rich
 from langchain.agents import create_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_core.tools import BaseTool, tool
 from langchain_llama_server import ChatLlamaServer
-from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
 
 # tools:
@@ -42,17 +40,13 @@ agent = create_deep_agent(
     system_prompt="Follow the user request exactly as written and do not reinterpret or optimize it.",
 )
 
-# agent.get_graph().print_ascii()
+agent.get_graph().print_ascii()
 
 config: RunnableConfig = {
     "configurable": {
         "thread_id": "thread123"
     },
 }
-
-import show
-# show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
-from show import stream_messages
 
 events = await stream_messages(agent, messages, config=config) # pyright: ignore
 
