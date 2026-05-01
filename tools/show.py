@@ -308,9 +308,19 @@ async def stream_messages(
             # * title (first are tools that have custom titles)
             if tool_name == "task":
                 subagent_type = args.get("subagent_type")
-                # PRN consider new color to standout (shade of blue to keep consistent?)
                 node = tree.add_markup(f"{color}Delegating {tool_name} to {subagent_type}")
-                # description arg => will show in HumanMessage below so no need to repeate it here
+                # description arg => will show in HumanMessage below so no need to repeat it here
+                #
+                # FYI can add guides for subagents if create new tree w/ them enabled (default on)
+                # - I would do this but then I don't want guides on every level thereafter
+                #   which would require a new tree per child node under the subagent node (this new_tree)...
+                #   and that would get messy ... I'd probably have to make a new tree for every node!
+                #   not sure if that would have any issues too!
+                # # uncomment this code to get guides on everything below subagent:
+                # new_tree = TreeWrapper(f"{color}Delegating {tool_name} to {subagent_type}")
+                # tree.add(new_tree)
+                # node = new_tree
+                #
             elif tool_name == "ls":
                 path = args.get("path")
                 node = tree.add_markup(f"{color}{tool_name} {path}")
