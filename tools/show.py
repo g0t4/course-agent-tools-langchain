@@ -421,18 +421,16 @@ async def stream_messages(
         child = tree.add_markup(f"[bold gray0 on magenta3] Command [/]")
         if command.update:
             messages = command.update.get("messages", [])
+            for msg in messages:
+                # i.e. ToolMessage (task report/summary) from subagent
+                increment_message_count()
+                _show_message(msg, child)
             for key, value in command.update.items():
                 # add other formatters for other common channels as they need arises (i.e. files channel)
                 if key == "messages":
                     continue
                 child.add_markup(f"{key}:")
                 child.add_pretty(value)
-            # show messages on same level as Command... and show these last so the nested key/value pairs from the Command appear related to the Command (header) and not appear nested under the last message since I show messages on same level as Command header!
-            # if I were to nest the Messages headers under Command then I'd show those first since they're the most important part
-            for msg in messages:
-                # i.e. ToolMessage (task report/summary) from subagent
-                increment_message_count()
-                _show_message(msg, tree) # FYI using tree for each message too so the message indentation shows which thread it is a part of (i.e. supervisor vs subagent)
         child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: TreeWrapper):
