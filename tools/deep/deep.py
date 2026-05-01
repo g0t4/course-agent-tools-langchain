@@ -21,6 +21,7 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
     # Qwen3.6 via llama-server
     # * disable thinking + give explicit instructions to gen parallel tool calls to Qwen3.6
     extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
+    # tool calling is often much more interesting w/o reasoning enabled :)
 )
 
 messages = [
