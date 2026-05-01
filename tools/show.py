@@ -175,9 +175,9 @@ class TreeWrapper(Tree):
         # btw Text == plain unless you pass a style arg
         return self.add(Text(text), **kwargs)
 
-    def add_markup(self, text: str, **kwargs) -> "TreeWrapper":
+    def add_markup(self, label: str, **kwargs) -> "TreeWrapper":
         """ this is purely for readability, to make it clear that the content should have markup rendered """
-        return self.add(text, **kwargs)
+        return self.add(label, **kwargs)
 
     def add_pretty(self, obj: Any, **kwargs) -> "TreeWrapper":
         return self.add(Pretty(obj), **kwargs)
