@@ -303,7 +303,7 @@ async def stream_messages(
             #   also useful to make the call standout and easy at a glance (i.e. read_file foo/to/bar.txt)
             #   DO NOT REPEAT all ARGS (i.e. don't need timeout on commands, offset/limit on read_file, etc)
 
-            color = "[bold gray0 on deep_sky_blue3]"
+            color = "[bold slate_blue1]"
 
             # * title (first are tools that have custom titles)
             if tool_name == "task":
