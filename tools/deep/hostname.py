@@ -20,7 +20,7 @@ model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
 )
 
 messages = [
-    HumanMessage("""What is my hostname?"""),
+    HumanMessage("What is my hostname?"),
 ]
 
 agent = create_deep_agent(
