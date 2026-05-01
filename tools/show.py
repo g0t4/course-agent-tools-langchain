@@ -17,7 +17,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Sequence, TypedDict
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, BaseMessage, ContentBlock, HumanMessage, SystemMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.schema import EventData, StreamEvent
 from langgraph.graph.state import CompiledStateGraph
@@ -449,11 +449,48 @@ async def stream_messages(
             # accumulated holds cumulative chunks => effectively becomes AIMessage (handles reasoning/content/tool_calls chunking)
             state.accumulated = state.accumulated + chunk
 
-        # * replace node
-        if state.node:
-            state.node.remove_self()
-        state.node = show_ai_message(state.accumulated, tree)
-        # state.node.add_pretty(state.accumulated) # DEBUGGING: fixed structure fills out as each chunk arrives (looks cool)
+        # # * replace node
+        # if state.node:
+        #     state.node.remove_self()
+        # state.node = show_ai_message(state.accumulated, tree)
+        # # state.node.add_pretty(state.accumulated) # DEBUGGING: fixed structure fills out as each chunk arrives (looks cool)
+
+        # * update node (test if this is a reason for issues with scrollback still)
+        if not state.node:
+            state.node = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
+
+        # message = state.accumulated # not gonna need if using append only updates
+        child = state.node
+        chunk_block: ContentBlock = chunk.content_blocks[0]
+        chunk_block_type = chunk_block["type"]
+        if chunk_block_type == "reasoning":
+            reasoning_label = "[bold]reasoning:[/]"
+            existings = [c for c in child.children if reasoning_label == c.label]
+            if any(existings):
+                # append new reasoning chunk (text) to existing node (that way not remove/add)
+                current_node = existings[0]
+                text_node: Text = current_node.children[0].label
+                text_node.append(chunk_block["reasoning"])
+            else:
+                # create new node with first reasoning chunk (text)
+                new_node = child.add_markup(reasoning_label)
+                new_node.add(Text(chunk_block["reasoning"], style="italic"))  # FYI Text does not parse/apply markup in the text value (1st positional arg)... use style to apply to the entire text value
+                new_node.blank_line()
+
+        # if message.content:
+        #     content_node = child.add_markup("[bold]content:[/]")
+        #     content_node.add_no_markup(message.content)
+        #     content_node.blank_line()
+        # if message.tool_calls:
+        #     for call in message.tool_calls:
+        #         name = call.get("name")
+        #         id = call.get("id", "")
+        #         tool_tree = child.add_markup(f"[bold]{name}[/] ({id})")
+        #         args = call.get("args", "")
+        #         if args:
+        #             tool_tree.add_pretty(args)
+        #         tool_tree.blank_line()
+        # return child
 
     def dump_all_events_except_streaming_tokens_for_debugging(event: StreamEvent, tree: TreeWrapper):
         event_type = event["event"]
