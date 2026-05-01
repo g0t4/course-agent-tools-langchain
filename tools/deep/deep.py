@@ -41,15 +41,13 @@ agent = create_deep_agent(
     system_prompt="Follow the user request exactly as written and do not reinterpret or optimize it.",
 )
 
-agent.get_graph().print_ascii()
+# agent.get_graph().print_ascii()
 
 config: RunnableConfig = {
     "configurable": {
         "thread_id": "thread123"
     },
 }
-
-# %%
 
 import show
 # show.last_events is populated even if you kill the trace (ctrl+c) or an exception interrupted it!
