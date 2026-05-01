@@ -496,6 +496,7 @@ async def stream_messages(
     # Mapping from a runnable's ``run_id`` to the Tree node that represents it.
     # This enables events from parallel runnables to locate the correct parent node and update it
     trees_by_run_id: dict[str, TreeWrapper] = {}
+
     def register_node(run_id: str, node: TreeWrapper):
         """ explicit method purely for readability """
         trees_by_run_id[run_id] = node
@@ -505,19 +506,18 @@ async def stream_messages(
             root,
             auto_refresh=False,
             # refresh_per_second=8,
-            vertical_overflow="visible",
-            # FYI do not use vertical_overflow="visible" for lots of lines of output as history will be a mess (when scrollback in neovim buffer)
-            #   disabling vertical_overflow fixes issue with scrollback messed up
-            #   check w/ HITL and search for top level repeats:
-            #      /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
-            #      should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
-            #        - check 6/6 matches, if >6 => messed up
-            #   * auto_refresh=False also fixes visual_overflow (tree draws once on exit)
-            #     - honestly this is perfectly fine for LONG traces anyways in which case you won't be reviewing on the fly! will wait to be done too
-            #     - manual live.refresh() at end of event loop fixes vertical_overflow (so far no issues)
-            #     - ? does using rich.console.clear_live() help?
-            #   PRN is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
+            # vertical_overflow="visible",  # FYI overflow is FINE if you don't plan on scrolling back OR you're careful with it
+            # FYI for my demos I am fine disabling it as I mostly review after the fact and hence I do not want scrollback mishaps that present a false picture of what happeened
+            #   and w/ overflow not visible, this might make editing demos easier...
+            #   decide case by case
             #
+            # * DISABLE vertical_overflow fixes scrollback problems w/ long traces
+            #   auto_refresh=False helped in _SOME_ cases of long traces + vertical overflow, but not all
+            #      check w/ HITL and search for top level repeats:
+            #        - /thread_id': 'generate_a_thread_id_fawse234awe', 'ls_integration': 'langgraph
+            #        - should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
+            #        - check 6/6 matches, if >6 => messed up
+            #   PRN is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
     ) as live:
         show_initial_messages(root, live)
 
