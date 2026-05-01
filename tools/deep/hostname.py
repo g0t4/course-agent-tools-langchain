@@ -25,12 +25,11 @@ messages = [
 
 agent = create_deep_agent(
     model=model,
-    system_prompt="Follow the user request exactly as written and do not reinterpret or optimize it.",
 )
 
 events = await stream_messages(agent, messages) # pyright: ignore
 
 # %% 
 
-output = agent.invoke({"messages": messages})
-rich.print(output)
+# output = agent.invoke({"messages": messages})
+# rich.print(output)
