@@ -403,16 +403,35 @@ async def stream_messages(
         child.blank_line()
 
     def on_tool_end(event: StreamEvent, tree: TreeWrapper):
-        increment_message_count()
         data: EventData = event.get("data")
         output = data.get("output")
         if isinstance(output, ToolMessage):
+            increment_message_count()
             show_tool_message(output, tree)
+        elif isinstance(output, Command):
+            show_command(output, tree)
+        # PRN resume, goto (anything to show for these?)
         else:
             # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
             tree.add_pretty(output)  # FYI I actually like seeing the object, that seems good enough for now
             # tree.add_markup("[red bold] TODO SHOW ANYTHING else for on_tool_end when output is not just a ToolMessage?")
             # i.e. channels modified? update files modified (tmp file creation by subagent)
+
+    def show_command(command: Command, tree: TreeWrapper):
+        child = tree.add_markup(f"[bold magenta]Command[/]")
+        if command.update:
+            messages = command.update.get("messages", [])
+            for msg in messages:
+                # i.e. ToolMessage (task report/summary) from subagent
+                increment_message_count()
+                _show_message(msg, child)
+            for key, value in command.update.items():
+                # add other formatters for other common channels as they need arises (i.e. files channel)
+                if key == "messages":
+                    continue
+                child.add_markup(f"{key}:")
+                child.add_pretty(value)
+        child.blank_line()
 
     def show_ai_message(message: AIMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on deep_sky_blue3]AIMessage")
