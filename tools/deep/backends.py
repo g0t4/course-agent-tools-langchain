@@ -2,7 +2,8 @@
 get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
 get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
-from deepagents.backends import LocalShellBackend
+from deepagents.backends import FilesystemBackend, LocalShellBackend
+from langchain.agents.middleware import HumanInTheLoopMiddleware
 from run_python import run_command
 import show
 from show import stream_messages
@@ -18,7 +19,7 @@ from deepagents import SubAgent, create_deep_agent
 model = ChatLlamaServer(base_url="http://paxy:8012", api_key="",
     # Qwen3.6 via llama-server
     # * disable thinking + give explicit instructions to gen parallel tool calls to Qwen3.6
-    extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
+    # extra_body={"chat_template_kwargs": { "enable_thinking": False }}, \
 )
 
 messages = [
@@ -26,17 +27,19 @@ messages = [
     HumanMessage("What is my hostname?"),
 ]
 
-worker: SubAgent = {
-    "name": "worker",
-    "description": "Command line access to execute commands.",
-    "system_prompt": "Execute commands from your supervisor.",
-    "tools": [run_command],
-}
+# worker: SubAgent = {
+#     "name": "worker",
+#     "description": "Command line access to execute commands.",
+#     "system_prompt": "Execute commands from your supervisor.",
+#     "tools": [run_command],
+# }
 agent = create_deep_agent(
     model=model,
-    subagents=[ worker ],
+    backend=FilesystemBackend(virtual_mode=False),
+
+    # subagents=[ worker ],
     # backend=LocalShellBackend(virtual_mode=False)
-    tools = [run_command]
+    # tools = [run_command]
 )
 
 # %% 
