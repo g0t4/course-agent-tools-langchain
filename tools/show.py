@@ -1,3 +1,4 @@
+import traceback
 import os
 import rich
 from rich.console import RenderableType
@@ -216,6 +217,7 @@ class TreeWrapper(Tree):
     def add_error(self, message: str, error: Exception) -> "TreeWrapper":
         node = self.add_markup(f"[red bold]{message}[/]")
         node.add_pretty(error)
+        node.add_pretty(traceback.format_exc())
         return node
 
 @dataclass
