@@ -11,6 +11,7 @@ from langchain_llama_server import ChatLlamaServer
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import FilesystemBackend, LocalShellBackend
 
+from deep.run_command_command import run_command_command
 import show
 from show import stream_messages
 from run_python import run_command
@@ -46,7 +47,7 @@ command_runner: SubAgent = {
     "name": "command-runner",
     "description": "Command line access to execute commands.",
     "system_prompt": "Execute commands from your supervisor.",
-    "tools": [run_command],
+    "tools": [run_command_command],
     "model": qwen_nothink,
 }
 agent = create_deep_agent(
@@ -58,7 +59,6 @@ agent = create_deep_agent(
         web_researcher 
     ],
     # backend=LocalShellBackend(virtual_mode=False)
-    # tools = [run_command]
     checkpointer = InMemorySaver()
 )
 
