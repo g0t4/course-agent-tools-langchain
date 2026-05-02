@@ -597,11 +597,11 @@ async def stream_messages(
                 # must abort entirely, not continue... do not catch this error
                 raise RuntimeError("Parent node not found, this shouldn't ever happen, aborting...")
 
+            event_type = event["event"]
             try:
                 if dump_events:
                     dump_all_events_except_streaming_tokens_for_debugging(event, parent_node)
 
-                event_type = event["event"]
                 if event_type == "on_chain_start":
                     # FYI nesting is somewhat misleading w/ parallel execution => i.e. parallel tool calls... also will be true for other parallel branches
                     #   for now just mention parallelism is limit on this visualizer... and I am NOT ADDING anything for parallelism!
@@ -670,9 +670,12 @@ async def stream_messages(
                 else:
                     raise RuntimeError("No tree to log error to") from error
 
-            live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
 
             if not event_type.endswith("_stream"):
+                # FYI DO NOT try auto_refresh (it is horribly broken)... call refresh here on your own... or just dump it all on exit too 
+                # move live.rfresh into here to block on _stream for long traces cannot have streaming updates... doesn't make sense anyways... cuz vertical_overflow=False anyways 
+                #  PRN maybe after message_count > 2 then only update here? that would help make short threads responsive while long ones faster
+                live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
                 dump_tree_to_out_ansi(root)
 
     dump_tree_to_out_ansi(root)
