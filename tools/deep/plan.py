@@ -11,10 +11,10 @@ from langchain_llama_server import ChatLlamaServer
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import FilesystemBackend, LocalShellBackend
 
+from run_python import run_command
 from deep.run_command_command import run_command_command
 import show
 from show import stream_messages
-from run_python import run_command
 
 client = MultiServerMCPClient({
     "fetch": {
@@ -47,7 +47,7 @@ command_runner: SubAgent = {
     "name": "command-runner",
     "description": "Command line access to execute commands.",
     "system_prompt": "Execute commands from your supervisor.",
-    "tools": [run_command],
+    "tools": [run_command_command],
     "model": qwen_nothink,
 }
 agent = create_deep_agent(
