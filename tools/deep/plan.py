@@ -3,6 +3,7 @@ get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
 get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
 import os
+from langgraph.graph.state import RunnableConfig
 import rich
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -63,6 +64,7 @@ agent = create_deep_agent(
           
 
 messages = [ 
+    # HumanMessage("What is your name? Then, ask ALL subagent types to return their name")
     # HumanMessage("show me a md table and `inline code blocks`")
     # HumanMessage("ask the web research to list its tools + arguments per tool")
     # * rich.print([e for e in events if e["event"] == "on_chat_model_end"][-1]["data"]["output"].content)
@@ -90,9 +92,7 @@ Keep track of progress using write_todos tool
 
 ]
 
+configs: RunnableConfig = {"recursion_limit": 200, "configurable":{ "thread_id": "test1", } }
 
-configs = {"recursion_limit": 200,
-           "configurable":{ "thread_id": "test1", }
-           }
 events = await stream_messages(agent, messages, config=configs)  # pyright: ignore
 
