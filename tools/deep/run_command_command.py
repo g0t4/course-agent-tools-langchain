@@ -5,7 +5,8 @@ from langchain_core.tools import tool
 from langgraph.types import Command
 
 @tool(description="Execute a shell commandline and return its STDOUT.")
-def run_command_command(tool_call_id: str, commandline: str) -> ToolMessage:
+# def run_command_command(tool_call_id: str, commandline: str) -> ToolMessage:
+def run_command_command(runtime: ToolRuntime, commandline: str) -> ToolMessage:
 
     # block ls -R
     if commandline.strip().startswith("ls -R"):
@@ -26,7 +27,8 @@ def run_command_command(tool_call_id: str, commandline: str) -> ToolMessage:
     }
     status = "success" if result.returncode == 0 else "error"
     # FYI content value is slightly different as a result of passing ToolMessage but has all the same info
-    return ToolMessage(content=content, status=status, tool_call_id=tool_call_id)
+    # return ToolMessage(content=content, status=status, tool_call_id=tool_call_id)
+    return ToolMessage(content=content, status=status, tool_call_id=runtime.tool_call_id)
 
 # PRN try Command instead of ToolMessage:
 #  return Command(update={"messages": [ToolMessage]})
