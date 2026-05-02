@@ -83,6 +83,11 @@ Do not make assumptions about what tools a given agent has, ask each one.
 Keep track of progress using write_todos tool
 """),
 
+# TODO bonus => add line "And, I ask each agent three times and report differences (if any). before last line "keep track" ... look at write_todos in this case!
+# BTW gptoss does a stellar job at planning and coordinating the agents (as supervisor)
+#   even w/ qwen_nothink subagent!
+
+
 #     # HumanMessage("How much would it cost, in today's prices, to rebuild the machine you are running on right now?"),
 #     HumanMessage("""Tell me about the hardware in my machine. 
 # And links to the product page for ONE hardware item (NOT ALL OF THEM).
