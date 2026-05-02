@@ -667,6 +667,9 @@ async def stream_messages(
             with open("out.ansi", "w") as f:
                 console = Console(file=f, force_terminal=True, color_system="truecolor")
                 console.print(root)
+            # btw this worked good to scroll this out.ansi file in a trace like fashion (flashy but works and even makes apparent parallel branch updates)
+            #   bash
+            #   while true; do   printf "\033[H\033[J";   tail -n $(tput lines) out.ansi;   sleep 0.05; done
 
     return events
 
