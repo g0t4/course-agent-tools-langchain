@@ -393,8 +393,10 @@ async def stream_messages(
         #    _display_tool_run_python(message, tree)
         elif isinstance(content, str):
             lines = content.splitlines()
-            if len(lines) > 5:
-                tree.add_no_markup("\n".join(lines[:5]) + "\n...")
+            limit = 10
+            if len(lines) > limit:
+                tree.add_no_markup("\n".join(lines[:limit]))
+                tree.add_markup("[bold yellow]...[/]")
             else:
                 tree.add_no_markup(content)
         else:
