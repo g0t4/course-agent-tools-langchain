@@ -241,10 +241,13 @@ async def stream_messages(
 ):
     # TODO remove message count so I don't have to worry about decrement (i.e. RemoveMessage, summarization), Commands, and subagents
     message_count = 0
+    count_node = None
 
     def increment_message_count():
         nonlocal message_count
         message_count += 1
+        if count_node:
+            count_node.label = f"Message count: {message_count}"
 
     def show_system_message(message: SystemMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on gold1] SystemMessage [/]")
@@ -521,6 +524,8 @@ async def stream_messages(
 
     root = TreeWrapper("agent", hide_root=True)
     root.TREE_GUIDES = [("    ", "    ", "    ", "    ")]
+
+    count_node = root.add_markup(f"message count: {message_count}")
 
     # Mapping from a runnable's ``run_id`` to the Tree node that represents it.
     # This enables events from parallel runnables to locate the correct parent node and update it
