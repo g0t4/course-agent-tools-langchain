@@ -282,16 +282,17 @@ async def stream_messages(
             return SystemMessage(**message)
         raise ValueError(f"Unsupported role: {role}")
 
-    def _show_message(message, tree: TreeWrapper):
+    def _show_message(message, tree: TreeWrapper, event: StreamEvent | None = None):
         if isinstance(message, dict):
             message = _dict_to_message(message)
 
+        # PRN pass event to other formatters? right now only show_tool_message needs it, but you can pass to others too (make optional)
         if isinstance(message, HumanMessage):
             show_human_message(message, tree)
         elif isinstance(message, SystemMessage):
             show_system_message(message, tree)
         elif isinstance(message, ToolMessage):
-            show_tool_message(message, tree)
+            show_tool_message(message, tree, event)
         elif isinstance(message, AIMessage):
             show_ai_message(message, tree)
         else:
@@ -412,8 +413,19 @@ async def stream_messages(
             return
         tree.add_sections_from_json_keys(message.content)
 
-    def show_tool_message(message: ToolMessage, tree: TreeWrapper):
+    def show_tool_message(message: ToolMessage, tree: TreeWrapper, event: StreamEvent | None = None):
+        # tree.add_pretty(event)
         name = message.name
+        if name is None:
+            # task tool's ToolMessage does not set message.name like other tool calls...
+            #   this ToolMessage is from the subagent's final AIMessage "summary" that is then put into a ToolMessage to return to the supervisor agent
+            # not sure if this is a bug or intended... but, event.name includes the tool name (both for "task" tool and "run_command" in my testing)
+            # FYI initial messages won't have the event to pass, expect those cases to have name fixed on ToolMessage
+            if event and event.get("name") == "task":
+                name = "task"
+            else:
+                name = "MISSING TOOL NAME"  # make this obvious if it happens in another scenario
+
         id = message.tool_call_id
         child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
@@ -425,24 +437,23 @@ async def stream_messages(
         output = data.get("output")
         if isinstance(output, ToolMessage):
             increment_message_count()
-            show_tool_message(output, tree)
+            show_tool_message(output, tree, event)
         elif isinstance(output, Command):
-            show_command(output, tree)
+            show_command(output, tree, event)
         # PRN resume, goto (anything to show for these?)
         else:
-            # when you use the `task` tool then on_tool_end can return a Command to update multiple channels instead of just a new ToolMessage...
-            tree.add_pretty(output)  # FYI I actually like seeing the object, that seems good enough for now
-            # tree.add_markup("[red bold] TODO SHOW ANYTHING else for on_tool_end when output is not just a ToolMessage?")
-            # i.e. channels modified? update files modified (tmp file creation by subagent)
+            # show other modified channels:
+            # `task` tool can update more than just the "messages" (ToolMessage)... also "files" are shared
+            tree.add_pretty(output)  # FYI I actually like seeing the object, that seems good enough for now...
 
-    def show_command(command: Command, tree: TreeWrapper):
+    def show_command(command: Command, tree: TreeWrapper, event: StreamEvent):
         child = tree.add_markup(f"[bold gray0 on magenta3] Command [/]")
         if command.update:
             messages = command.update.get("messages", [])
             for msg in messages:
                 # i.e. ToolMessage (task report/summary) from subagent
                 increment_message_count()
-                _show_message(msg, child)
+                _show_message(msg, child, event)
             for key, value in command.update.items():
                 # add other formatters for other common channels as they need arises (i.e. files channel)
                 if key == "messages":
