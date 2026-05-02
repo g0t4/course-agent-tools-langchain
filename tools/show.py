@@ -419,8 +419,9 @@ async def stream_messages(
             name = message.name
             if name is not None:
                 return name
-            if event and event.get("name") == "task":
-                return "task"
+            if event and event.get("name"):
+                # happens for `task` and `write_todos` via Command(update=...) 
+                return event.get("name")
             return "MISSING TOOL NAME"
 
         tool_name = get_tool_name(message, event)
