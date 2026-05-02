@@ -414,18 +414,16 @@ async def stream_messages(
         tree.add_sections_from_json_keys(message.content)
 
     def show_tool_message(message: ToolMessage, tree: TreeWrapper, event: StreamEvent | None = None):
-        # tree.add_pretty(event)
-        name = message.name
-        if name is None:
-            # task tool's ToolMessage does not set message.name like other tool calls...
-            #   this ToolMessage is from the subagent's final AIMessage "summary" that is then put into a ToolMessage to return to the supervisor agent
-            # not sure if this is a bug or intended... but, event.name includes the tool name (both for "task" tool and "run_command" in my testing)
-            # FYI initial messages won't have the event to pass, expect those cases to have name fixed on ToolMessage
-            if event and event.get("name") == "task":
-                name = "task"
-            else:
-                name = "MISSING TOOL NAME"  # make this obvious if it happens in another scenario
 
+        def get_tool_name(message: ToolMessage, event: StreamEvent | None) -> str:
+            name = message.name
+            if name is not None:
+                return name
+            if event and event.get("name") == "task":
+                return "task"
+            return "MISSING TOOL NAME"
+
+        name = get_tool_name(message, event)
         id = message.tool_call_id
         child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{name}[/] ({id})")
         # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
