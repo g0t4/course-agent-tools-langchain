@@ -199,10 +199,21 @@ class TreeWrapper(Tree):
             self.add_section(key, value)
         return self
 
-    def add_section(self, title: str, value: Any) -> "TreeWrapper":
-        self.add_markup(f"[bold]{title}[/]:")\
-            .add_no_markup(str(value))
-        return self
+    def show_truncated_string(self, text: str):
+        lines = text.splitlines()
+        limit = 5
+        if len(lines) > limit:
+            self.add_no_markup("\n".join(lines[:limit])) \
+                .add_markup("[bold yellow]...[/]")
+        else:
+            self.add_no_markup(text)
+
+    def add_section(self, title: str, value: Any):
+        section = self.add_markup(f"[bold]{title}[/]:")
+        if isinstance(value, str):
+            section.show_truncated_string(value)
+        else:
+            section.add_no_markup(str(value))
 
     def remove_self(self):
         if self.parent:
@@ -389,13 +400,7 @@ async def stream_messages(
         # elif message.name == "run_python":
         #    _display_tool_run_python(message, tree)
         elif isinstance(content, str):
-            lines = content.splitlines()
-            limit = 10
-            if len(lines) > limit:
-                tree.add_no_markup("\n".join(lines[:limit]))
-                tree.add_markup("[bold yellow]...[/]")
-            else:
-                tree.add_no_markup(content)
+            tree.show_truncated_string(content)
         else:
             tree.add_pretty(content)  # pretty spans multiple lines, is indented, looks very nice
 
