@@ -80,8 +80,6 @@ messages = [
 First, list the tools you have as the supervisor. 
 Then, ask ALL subagent types to list its tools and report back a final list of all tools for all agents.
 Do not make assumptions about what tools a given agent has, ask each one.
-And, I ask each agent three times and report differences (if any).
-Keep track of progress using write_todos tool
 """),
 
 #     # HumanMessage("How much would it cost, in today's prices, to rebuild the machine you are running on right now?"),
