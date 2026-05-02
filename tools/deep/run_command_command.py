@@ -1,3 +1,4 @@
+import subprocess
 from langchain.tools import ToolRuntime
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
@@ -5,7 +6,6 @@ from langgraph.types import Command
 
 @tool(description="Execute a shell commandline and return its STDOUT.")
 def run_command_command(tool_call_id: str, commandline: str) -> ToolMessage:
-    import subprocess
 
     # block ls -R
     if commandline.strip().startswith("ls -R"):
