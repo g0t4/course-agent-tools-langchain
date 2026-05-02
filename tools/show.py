@@ -420,14 +420,18 @@ async def stream_messages(
             if name is not None:
                 return name
             if event and event.get("name"):
-                # happens for `task` and `write_todos` via Command(update=...) 
+                # happens for `task` and `write_todos` via Command(update=...)
                 return event.get("name")
             return "MISSING TOOL NAME"
 
         tool_name = get_tool_name(message, event)
         show_tool_name = "task (SUBAGENT)" if tool_name == "task" else tool_name
         id = message.tool_call_id
-        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{show_tool_name}[/] ({id})")
+
+        # FYI status should only be success/error, leave as-is if not:
+        status = "✅" if message.status == "success" else ("❌" if message.status == "error" else message.status)
+
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{show_tool_name}[/] {status} ({id})")
         # ? if tool_name == "task" => show message.content as markdown?
         _display_tool_message_content(message, child)
         child.blank_line()
