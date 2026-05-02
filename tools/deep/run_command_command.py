@@ -33,6 +33,7 @@ def run_command_command(runtime: ToolRuntime, commandline: str) -> Command:
     return Command(update={
         #  FYI this is what deepagent's task and write_todos tools do
         "messages": [
+            # if status is invalid value, on_tool_end never fires... so the Command/ToolMessage combo are misssed 
             ToolMessage(content=content, status=status, tool_call_id=runtime.tool_call_id),
         ]
     })
