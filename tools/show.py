@@ -241,13 +241,10 @@ async def stream_messages(
 ):
     # TODO remove message count so I don't have to worry about decrement (i.e. RemoveMessage, summarization), Commands, and subagents
     message_count = 0
-    count_node = None
 
     def increment_message_count():
         nonlocal message_count
         message_count += 1
-        if count_node:
-            count_node.label = f"Message count: {message_count}"
 
     def show_system_message(message: SystemMessage, tree: TreeWrapper):
         child = tree.add_markup(f"{message_count}. [bold gray0 on gold1] SystemMessage [/]")
@@ -495,6 +492,16 @@ async def stream_messages(
             return
         tree.add_pretty(event)
 
+    def dump_tree_to_out_ansi(tree: TreeWrapper):
+        # btw this worked good to scroll this out.ansi file in a trace like fashion (flashy but works and even makes apparent parallel branch updates):
+        #   bash
+        #   while true; do   printf "\033[H\033[J";   tail -n $(tput lines) out.ansi;   sleep 0.05; done
+        # * dump to file as backup for messed up scrollback or just for referencing afterwards (snapshot of past runs)
+        from rich.console import Console
+        with open("out.ansi", "w") as f:
+            console = Console(file=f, force_terminal=True, color_system="truecolor")
+            console.print(root)
+
     def show_initial_messages(tree: TreeWrapper, live: Live):
         nonlocal input
         if isinstance(input, Command) or input is None:
@@ -526,8 +533,6 @@ async def stream_messages(
 
     root = TreeWrapper("agent", hide_root=True)
     root.TREE_GUIDES = [("    ", "    ", "    ", "    ")]
-
-    count_node = root.add_markup(f"message count: {message_count}")
 
     # Mapping from a runnable's ``run_id`` to the Tree node that represents it.
     # This enables events from parallel runnables to locate the correct parent node and update it
@@ -662,14 +667,10 @@ async def stream_messages(
 
             live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
 
-            # * dump to file as backup for messed up scrollback or just for referencing afterwards (snapshot of past runs)
-            from rich.console import Console
-            with open("out.ansi", "w") as f:
-                console = Console(file=f, force_terminal=True, color_system="truecolor")
-                console.print(root)
-            # btw this worked good to scroll this out.ansi file in a trace like fashion (flashy but works and even makes apparent parallel branch updates)
-            #   bash
-            #   while true; do   printf "\033[H\033[J";   tail -n $(tput lines) out.ansi;   sleep 0.05; done
+            if not event_type.endswith("_stream"):
+                dump_tree_to_out_ansi(root)
+
+    dump_tree_to_out_ansi(root)
 
     return events
 
