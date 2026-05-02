@@ -662,11 +662,11 @@ async def stream_messages(
 
             live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
 
-    # * dump to file as backup for messed up scrollback or just for referencing afterwards (snapshot of past runs)
-    from rich.console import Console
-    with open("out.ansi", "w") as f:
-        console = Console(file=f, force_terminal=True, color_system="truecolor")
-        console.print(root)
+            # * dump to file as backup for messed up scrollback or just for referencing afterwards (snapshot of past runs)
+            from rich.console import Console
+            with open("out.ansi", "w") as f:
+                console = Console(file=f, force_terminal=True, color_system="truecolor")
+                console.print(root)
 
     return events
 
