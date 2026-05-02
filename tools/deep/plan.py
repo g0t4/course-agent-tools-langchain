@@ -52,14 +52,12 @@ command_runner: SubAgent = {
 }
 agent = create_deep_agent(
     model=gptoss,
-    # backend=FilesystemBackend(virtual_mode=False),
-
     subagents=[ 
         command_runner, 
         web_researcher 
     ],
-    # backend=LocalShellBackend(virtual_mode=False)
     checkpointer = InMemorySaver()
+    # no backends intentionally => no execute command => forces the use of subagents
 )
 
           
