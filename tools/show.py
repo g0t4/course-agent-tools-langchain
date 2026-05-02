@@ -423,12 +423,13 @@ async def stream_messages(
                 return "task"
             return "MISSING TOOL NAME"
 
-        name = get_tool_name(message, event)
+        tool_name = get_tool_name(message, event)
         id = message.tool_call_id
-        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{name}[/] ({id})")
-        # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
+        child = tree.add_markup(f"{message_count}. [bold gray0 on slate_blue1] ToolMessage [/]: [bold]{tool_name}[/] ({id})")
+        # ? if tool_name == "task" => show message.content as markdown?
         _display_tool_message_content(message, child)
         child.blank_line()
+        # FYI I could show the args pretty-ified here if I cache them and don't show on tool start
 
     def on_tool_end(event: StreamEvent, tree: TreeWrapper):
         data: EventData = event.get("data")
