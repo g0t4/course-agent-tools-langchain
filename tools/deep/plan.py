@@ -67,7 +67,7 @@ messages = [
     # HumanMessage("ask the web research to list its tools + arguments per tool")
     # * rich.print([e for e in events if e["event"] == "on_chat_model_end"][-1]["data"]["output"].content)
     
-    HumanMessage("Run the false command and let the exit code remain nonzero")
+    # HumanMessage("Run the false command and let the exit code remain nonzero"),
 
     # HumanMessage("search for RTX 6000 Pro on amazon.com") # blocks
 
