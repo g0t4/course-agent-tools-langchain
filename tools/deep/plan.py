@@ -3,17 +3,17 @@ get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
 get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
 import os
-from deepagents.backends import FilesystemBackend, LocalShellBackend
-from langchain.agents.middleware import HumanInTheLoopMiddleware
-from run_python import run_command
-import show
-from show import stream_messages
-
 import rich
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.checkpoint.memory import InMemorySaver
 from langchain_llama_server import ChatLlamaServer
 from deepagents import SubAgent, create_deep_agent
+from deepagents.backends import FilesystemBackend, LocalShellBackend
+
+import show
+from show import stream_messages
+from run_python import run_command
 
 client = MultiServerMCPClient({
     "fetch": {
@@ -59,8 +59,10 @@ agent = create_deep_agent(
     ],
     # backend=LocalShellBackend(virtual_mode=False)
     # tools = [run_command]
+    checkpointer = InMemorySaver()
 )
 
+          
 
 messages = [ 
     # HumanMessage("show me a md table and `inline code blocks`")
@@ -91,5 +93,8 @@ Keep track of progress using write_todos tool
 ]
 
 
-events = await stream_messages(agent, messages, config={"recursion_limit": 200})  # pyright: ignore
+configs = {"recursion_limit": 200,
+           "configurable":{ "thread_id": "test1", }
+           }
+events = await stream_messages(agent, messages, config=configs)  # pyright: ignore
 
