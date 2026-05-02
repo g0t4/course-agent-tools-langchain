@@ -1,7 +1,7 @@
 import traceback
 import os
 import rich
-from rich.console import RenderableType
+from rich.console import RenderableType, Console
 from rich.style import Style
 from rich.syntax import Syntax
 from rich.padding import Padding
@@ -10,6 +10,8 @@ from rich.text import Text
 from rich.tree import Tree
 from rich.pretty import Pretty
 from rich.markup import escape
+from rich.markdown import Markdown
+from flair.rich_theme.markdown import md_theme
 
 import json
 import sys
@@ -23,10 +25,9 @@ from langchain_core.runnables.schema import EventData, StreamEvent
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
-console = rich.console.Console()
-
 def show_messages(messages):
     # *legacy* (initial helper to show messages... not related to stream_messages() below)
+    console = Console(theme=md_theme)
     # first pass at showing messages (pre-streaming)
     # this is replaced by stream_messages() below which is way more useful (i.e. streaming)
     for m in messages:
@@ -459,8 +460,9 @@ async def stream_messages(
             reasoning_node.blank_line()
         if message.content:
             content_node = child.add_markup("[bold]content:[/]")
-            content_node.add_no_markup(message.content)
-            content_node.blank_line()
+            # PRN any situations where this isn't markdown? that would be materially ruined by trying to use it as markdown? i.e. structured outputs?
+            # PRN also apply to task tool's ToolMessage.content? likely is markdown too as that is the final AIMessage from subagent
+            content_node.add(Markdown(message.content))
         if message.tool_calls:
             for call in message.tool_calls:
                 name = call.get("name")
@@ -502,9 +504,8 @@ async def stream_messages(
         #   bash
         #   while true; do   printf "\033[H\033[J";   tail -n $(tput lines) out.ansi;   sleep 0.05; done
         # * dump to file as backup for messed up scrollback or just for referencing afterwards (snapshot of past runs)
-        from rich.console import Console
         with open("out.ansi", "w") as f:
-            console = Console(file=f, force_terminal=True, color_system="truecolor")
+            console = Console(file=f, force_terminal=True, color_system="truecolor", theme=md_theme)
             console.print(root)
 
     def show_initial_messages(tree: TreeWrapper, live: Live):
@@ -564,6 +565,7 @@ async def stream_messages(
             #        - should only find: 1 on_chain_start, 4 on_chain_stream, 1 on_chain_end
             #        - check 6/6 matches, if >6 => messed up
             #   PRN is there a way to dump the live to a file? could I do that at end just to have reliable place to check?
+            console=Console(theme=md_theme),
     ) as live:
         show_initial_messages(root, live)
 
@@ -670,10 +672,9 @@ async def stream_messages(
                 else:
                     raise RuntimeError("No tree to log error to") from error
 
-
             if not event_type.endswith("_stream"):
-                # FYI DO NOT try auto_refresh (it is horribly broken)... call refresh here on your own... or just dump it all on exit too 
-                # move live.rfresh into here to block on _stream for long traces cannot have streaming updates... doesn't make sense anyways... cuz vertical_overflow=False anyways 
+                # FYI DO NOT try auto_refresh (it is horribly broken)... call refresh here on your own... or just dump it all on exit too
+                # move live.rfresh into here to block on _stream for long traces cannot have streaming updates... doesn't make sense anyways... cuz vertical_overflow=False anyways
                 #  PRN maybe after message_count > 2 then only update here? that would help make short threads responsive while long ones faster
                 live.refresh()  # refresh after each event, works w/ vertical_overflow so far! __knock_on_wood__
                 dump_tree_to_out_ansi(root)
