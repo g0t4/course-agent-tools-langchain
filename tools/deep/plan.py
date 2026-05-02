@@ -47,7 +47,7 @@ command_runner: SubAgent = {
     "name": "command-runner",
     "description": "Command line access to execute commands.",
     "system_prompt": "Execute commands from your supervisor.",
-    "tools": [run_command_command],
+    "tools": [run_command],
     "model": qwen_nothink,
 }
 agent = create_deep_agent(
