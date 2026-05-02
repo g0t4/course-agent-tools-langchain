@@ -30,10 +30,9 @@ def run_command_command(runtime: ToolRuntime, commandline: str) -> Command:
     # FYI content value is slightly different as a result of passing ToolMessage but has all the same info
     # return ToolMessage(content=content, status=status, tool_call_id=tool_call_id)
     # return ToolMessage(content=content, status=status, tool_call_id=runtime.tool_call_id)
-    return Command(update={"messages": [
-        ToolMessage(content=content, status=status, tool_call_id=runtime.tool_call_id),
-    ]})
-
-# PRN try Command instead of ToolMessage:
-#  return Command(update={"messages": [ToolMessage]})
-#  that's what deepagent's task and write_todos tools do
+    return Command(update={
+        #  FYI this is what deepagent's task and write_todos tools do
+        "messages": [
+            ToolMessage(content=content, status=status, tool_call_id=runtime.tool_call_id),
+        ]
+    })
