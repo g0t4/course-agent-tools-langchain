@@ -80,6 +80,7 @@ messages = [
 First, list the tools you have as the supervisor. 
 Then, ask ALL subagent types to list its tools and report back a final list of all tools for all agents.
 Do not make assumptions about what tools a given agent has, ask each one.
+Keep track of progress using write_todos tool
 """),
 
 #     # HumanMessage("How much would it cost, in today's prices, to rebuild the machine you are running on right now?"),
@@ -93,4 +94,19 @@ Do not make assumptions about what tools a given agent has, ask each one.
 configs: RunnableConfig = {"recursion_limit": 200, "configurable":{ "thread_id": "test1", } }
 
 events = await stream_messages(agent, messages, config=configs)  # pyright: ignore
+# above is m4-11
+
+# %% 
+
+#m4-12
+
+# dump todos before resume attempt!
+rich.print(agent.get_state(configs).values["todos"])
+
+# point out final todo marked completed after reasoning to complete the final task ... reasoning like a scratch pad and then final content message right after write_todos tool finishes marking last todo completed
+events = await stream_messages(agent, None, config=configs)  # pyright: ignore
+
+# dump todos after finished!
+rich.print(agent.get_state(configs).values["todos"])
+
 
