@@ -20,6 +20,7 @@ model = ChatLlamaServer(
 messages = [
     # successful, NOT subagent parallel tool calls
     HumanMessage("Run two commands in parallel: run_command(hostname) and run_command(date)"),
+    # HumanMessage("Run two commands in parallel: run_command(ls -R) and run_command(date)"), # test truncated text output with `ls -R`
 ]
 
 agent = create_deep_agent(

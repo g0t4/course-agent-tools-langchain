@@ -202,10 +202,15 @@ class TreeWrapper(Tree):
 
     def show_truncated_string(self, text: str):
         lines = text.splitlines()
-        limit = 5
-        if len(lines) > limit:
-            self.add_no_markup("\n".join(lines[:limit])) \
-                .add_markup("[bold yellow]...[/]")
+        max_lines = 5
+        if len(lines) > max_lines:
+            initial = "\n".join(lines[:max_lines])
+            truncated_lines = len(lines) - max_lines
+            truncated_chars = len(text) - len(initial)  # total chars - shown chars
+            truncated_indicator = f"... ({truncated_lines} lines, {truncated_chars} chars)"
+            # PRN truncate on char count too? really long lines of output can be a problem too (measure length of first X lines and if super long then take char_max too... else maybe allow more lines than I do now within reason)
+            self.add_no_markup(initial)
+            self.add_markup(f"[bold yellow]{truncated_indicator}[/]")
         else:
             self.add_no_markup(text)
 
